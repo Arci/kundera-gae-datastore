@@ -1,0 +1,18 @@
+## MacOSX stuff ##
+.DS_Store
+
+## IntelliJ stuff ## 
+*.iws
+*.iml
+.idea/
+*.ipr
+
+## Maven stuff ##
+target/
+test-output/
+
+## Eclipse stuff ##
+.project
+.classpath
+.settings
+bin
