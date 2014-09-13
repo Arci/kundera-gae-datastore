@@ -2,12 +2,15 @@ package com.impetus.client.datastore;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.impetus.client.datastore.query.DatastoreQuery;
+import com.impetus.kundera.PersistenceProperties;
 import com.impetus.kundera.client.Client;
 import com.impetus.kundera.client.ClientBase;
 import com.impetus.kundera.db.RelationHolder;
 import com.impetus.kundera.index.IndexManager;
+import com.impetus.kundera.metadata.KunderaMetadataManager;
 import com.impetus.kundera.metadata.model.ClientMetadata;
 import com.impetus.kundera.metadata.model.EntityMetadata;
+import com.impetus.kundera.metadata.model.PersistenceUnitMetadata;
 import com.impetus.kundera.persistence.EntityManagerFactoryImpl.KunderaMetadata;
 import com.impetus.kundera.persistence.EntityReader;
 import com.impetus.kundera.persistence.context.jointable.JoinTableData;
@@ -28,7 +31,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     private static final Logger logger = LoggerFactory.getLogger(DatastoreClient.class);
     private EntityReader reader;
     private DatastoreService datastore;
-    private ClientMetadata clientMetadata;  // TODO check, seems that is never used also in other clients
+    private int batchSize;
 
     protected DatastoreClient(final KunderaMetadata kunderaMetadata, Map<String, Object> properties,
                               String persistenceUnit, final ClientMetadata clientMetadata, IndexManager indexManager,
@@ -38,7 +41,11 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         this.datastore = datastore;
         this.indexManager = indexManager;
         this.clientMetadata = clientMetadata;
-        // TODO check bash size? (some other dbs do that)
+        setBatchSize(persistenceUnit, this.externalProperties);
+    }
+
+    public void setBatchSize(int batchSize){
+        this.batchSize = batchSize;
     }
 
     @Override
@@ -131,5 +138,21 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     public <E> List<E> getColumnsById(String schemaName, String tableName, String pKeyColumnName, String columnName, Object pKeyColumnValue, Class columnJavaType) {
         // TODO Auto-generated method stub
         return null;
+    }
+
+    private void setBatchSize(String persistenceUnit, Map<String, Object> puProperties) {
+        String batch_Size = null;
+        if (puProperties != null) {
+            batch_Size = puProperties != null ? (String) puProperties.get(PersistenceProperties.KUNDERA_BATCH_SIZE)
+                    : null;
+            if (batch_Size != null) {
+                setBatchSize(Integer.valueOf(batch_Size));
+            }
+        }
+        else if (batch_Size == null) {
+            PersistenceUnitMetadata puMetadata = KunderaMetadataManager.getPersistenceUnitMetadata(kunderaMetadata,
+                    persistenceUnit);
+            setBatchSize(puMetadata.getBatchSize());
+        }
     }
 }
