@@ -6,6 +6,7 @@ import com.impetus.kundera.metadata.model.EntityMetadata;
 import com.impetus.kundera.persistence.AbstractEntityReader;
 import com.impetus.kundera.persistence.EntityManagerFactoryImpl.KunderaMetadata;
 import com.impetus.kundera.persistence.EntityReader;
+import com.impetus.kundera.query.KunderaQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +14,9 @@ import java.util.List;
 
 /**
  * @author Fabio Arcidiacono.
+ *
+ * Used by Kundera to translate the queries into correct client method calls.
+ *
  */
 public class DatastoreEntityReader extends AbstractEntityReader implements EntityReader {
 
@@ -20,7 +24,11 @@ public class DatastoreEntityReader extends AbstractEntityReader implements Entit
 
     public DatastoreEntityReader(final KunderaMetadata kunderaMetadata) {
         super(kunderaMetadata);
-        // TODO
+    }
+
+    public DatastoreEntityReader(KunderaQuery kunderaQuery, final KunderaMetadata kunderaMetadata) {
+        super(kunderaMetadata);
+        this.kunderaQuery = kunderaQuery;
     }
 
     /**
@@ -28,16 +36,12 @@ public class DatastoreEntityReader extends AbstractEntityReader implements Entit
      */
     @Override
     public List<EnhanceEntity> populateRelation(EntityMetadata m, Client client, int maxResults) {
-        // TODO Auto-generated method stub
-        return null;
+        // TODO understand more deeply (all implementatios act like this)
+        throw new UnsupportedOperationException("Method supported not required for Datastore");
     }
 
-    /**
-     * This is used by Query implementor to find entities by their ID.
-     */
     @Override
     public EnhanceEntity findById(Object primaryKey, EntityMetadata m, Client client) {
-        // TODO Auto-generated method stub
-        return null;
+        return super.findById(primaryKey, m, client);
     }
 }

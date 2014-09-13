@@ -15,6 +15,9 @@ import java.util.Map;
 
 /**
  * @author Fabio Arcidiacono.
+ *
+ * Used by Kundera to instantiate the Client.
+ *
  */
 public class DatastoreClientFactory extends GenericClientFactory {
 
@@ -23,11 +26,6 @@ public class DatastoreClientFactory extends GenericClientFactory {
     private SchemaManager schemaManager;
     private DatastoreService datastore;
 
-    /**
-     * This is called by Kundera when you create entity manager factory.
-     * Your responsibility is to initialize entity reader, schema manager and any other instance variable
-     * this class might hold.
-     */
     @Override
     public void initialize(Map<String, Object> puProperties) {
         reader = new DatastoreEntityReader(kunderaMetadata);
@@ -35,10 +33,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
         setExternalProperties(puProperties);
     }
 
-    /**
-     * This method is called after initialize by Kundera and your responsibility would be to create
-     * a pool (or connection) provided by your Java driver and return it.
-     */
+
     @Override
     protected Object createPoolOrConnection() {
         logger.info("Getting reference to datastore");
@@ -46,29 +41,23 @@ public class DatastoreClientFactory extends GenericClientFactory {
         return datastore;
     }
 
-    /**
-     * Kundera calls this method to get instance of client. You should initialize client and return it here.
-     */
+
     @Override
     protected Client instantiateClient(String persistenceUnit) {
+        logger.info("Instantiate new DatastoreClient");
         return new DatastoreClient(kunderaMetadata, externalProperties, persistenceUnit, clientMetadata,
                 indexManager, reader, datastore);
     }
 
-    /**
-     * It would return true or false depending upon how you want your client to be.
-     */
     @Override
     public boolean isThreadSafe() {
         return false;
     }
 
-    /**
-     * Finally, when entity manager factory is closed, Kundera calls this method to free up resources
-     * (e.g. closing connection pool)
-     */
+
     @Override
     public void destroy() {
+        logger.info("Destroying");
         indexManager.close();
         if (schemaManager != null) {
             schemaManager.dropSchema();
@@ -76,12 +65,6 @@ public class DatastoreClientFactory extends GenericClientFactory {
         datastore = null;
         externalProperties = null;
         schemaManager = null;
-    }
-
-    @Override
-    protected void initializeLoadBalancer(String loadBalancingPolicyName) {
-        throw new UnsupportedOperationException("Load balancing feature is not supported in "
-                + this.getClass().getSimpleName());
     }
 
     @Override
@@ -100,5 +83,11 @@ public class DatastoreClientFactory extends GenericClientFactory {
                     .getPersistenceUnitMetadata(getPersistenceUnit()));
             propertyReader.read(getPersistenceUnit());
         }
+    }
+
+    @Override
+    protected void initializeLoadBalancer(String loadBalancingPolicyName) {
+        throw new UnsupportedOperationException("Load balancing feature is not supported in "
+                + this.getClass().getSimpleName());
     }
 }

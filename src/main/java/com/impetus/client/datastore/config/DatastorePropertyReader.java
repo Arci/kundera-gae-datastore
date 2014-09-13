@@ -31,8 +31,6 @@ public class DatastorePropertyReader extends AbstractPropertyReader implements P
 
     private class DatastoreSchemaMetadata {
 
-        // TODO verify this name (comes from persistence.xml ?)
-        private static final String GAE_DATASTORE = "datastore";
         private ClientProperties clientProperties;
 
         private DatastoreSchemaMetadata() {
@@ -47,16 +45,5 @@ public class DatastorePropertyReader extends AbstractPropertyReader implements P
             this.clientProperties = clientProperties;
         }
 
-        // TODO is this needed?
-        public DataStore getDataStore() {
-            if (getClientProperties() != null && getClientProperties().getDatastores() != null) {
-                for (DataStore dataStore : getClientProperties().getDatastores()) {
-                    if (dataStore.getName() != null && dataStore.getName().trim().equalsIgnoreCase(GAE_DATASTORE)) {
-                        return dataStore;
-                    }
-                }
-            }
-            return null;
-        }
     }
 }

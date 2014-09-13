@@ -19,13 +19,16 @@ import java.util.Map;
 
 /**
  * @author Fabio Arcidiacono.
+ *
+ * The gateway to CRUD operations on database, except for queries.
+ *
  */
 public class DatastoreClient extends ClientBase implements Client<DatastoreQuery> {
 
     private static final Logger logger = LoggerFactory.getLogger(DatastoreClient.class);
     private EntityReader reader;
     private DatastoreService datastore;
-    private ClientMetadata clientMetadata;  //seems that is never used also in other clients
+    private ClientMetadata clientMetadata;  // TODO check, seems that is never used also in other clients
 
     protected DatastoreClient(final KunderaMetadata kunderaMetadata, Map<String, Object> properties,
                               String persistenceUnit, final ClientMetadata clientMetadata, IndexManager indexManager,

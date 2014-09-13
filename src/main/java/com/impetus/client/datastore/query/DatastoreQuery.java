@@ -16,6 +16,9 @@ import java.util.List;
 
 /**
  * @author Fabio Arcidiacono.
+ *
+ * used by Kundera to run JPA queries by invoking appropriate methods in Entity Readers.
+ *
  */
 public class DatastoreQuery extends QueryImpl {
 
