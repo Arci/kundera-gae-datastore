@@ -7,8 +7,6 @@ import com.impetus.kundera.persistence.AbstractEntityReader;
 import com.impetus.kundera.persistence.EntityManagerFactoryImpl.KunderaMetadata;
 import com.impetus.kundera.persistence.EntityReader;
 import com.impetus.kundera.query.KunderaQuery;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -17,8 +15,6 @@ import java.util.List;
  *         <p/>Used by Kundera to translate the queries into correct client method calls.</p>
  */
 public class DatastoreEntityReader extends AbstractEntityReader implements EntityReader {
-
-    private static Logger logger = LoggerFactory.getLogger(DatastoreEntityReader.class);
 
     public DatastoreEntityReader(final KunderaMetadata kunderaMetadata) {
         super(kunderaMetadata);

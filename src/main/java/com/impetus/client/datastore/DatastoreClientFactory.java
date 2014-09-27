@@ -26,6 +26,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
 
     @Override
     public void initialize(Map<String, Object> puProperties) {
+        logger.info("initialize");
         reader = new DatastoreEntityReader(kunderaMetadata);
         initializePropertyReader();
         setExternalProperties(puProperties);
@@ -56,14 +57,14 @@ public class DatastoreClientFactory extends GenericClientFactory {
         //
         // DatastoreServiceConfig config = withReadPolicy(new ReadPolicy(ReadPolicy.Consistency.EVENTUAL));
         // datastore = DatastoreServiceFactory.getDatastoreService(config);
-        logger.info("Getting reference to datastore");
+        logger.info("getting reference to datastore");
         datastore = DatastoreServiceFactory.getDatastoreService();
         return datastore;
     }
 
     @Override
     protected Client instantiateClient(String persistenceUnit) {
-        logger.info("Instantiate new DatastoreClient");
+        logger.info("instantiate new DatastoreClient");
         return new DatastoreClient(kunderaMetadata, externalProperties, persistenceUnit, clientMetadata,
                 indexManager, reader, datastore);
     }
@@ -75,7 +76,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
 
     @Override
     public void destroy() {
-        logger.info("Destroying");
+        logger.info("destroying");
         if (indexManager != null) {
             indexManager.close();
         }
@@ -89,7 +90,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
 
     @Override
     public SchemaManager getSchemaManager(Map<String, Object> puProperties) {
-        logger.info("Requested schemaManager");
+        logger.info("requested schemaManager");
         if (schemaManager == null) {
             initializePropertyReader();
             setExternalProperties(puProperties);
@@ -105,7 +106,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
     }
 
     private void initializePropertyReader() {
-        logger.info("Requested propertyReaded");
+        logger.info("requested propertyReaded");
         if (propertyReader == null) {
             propertyReader = new DatastorePropertyReader(externalProperties, kunderaMetadata.getApplicationMetadata()
                     .getPersistenceUnitMetadata(getPersistenceUnit()));

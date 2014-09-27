@@ -8,11 +8,13 @@ import com.impetus.kundera.persistence.EntityReader;
 import com.impetus.kundera.persistence.PersistenceDelegator;
 import com.impetus.kundera.query.KunderaQuery;
 import com.impetus.kundera.query.QueryImpl;
+import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Queue;
 
 /**
  * @author Fabio Arcidiacono.
@@ -32,6 +34,7 @@ public class DatastoreQuery extends QueryImpl {
      */
     public DatastoreQuery(KunderaQuery kunderaQuery, PersistenceDelegator persistenceDelegator, EntityManagerFactoryImpl.KunderaMetadata kunderaMetadata) {
         super(kunderaQuery, persistenceDelegator, kunderaMetadata);
+        logger.info("query constructor");
     }
 
     /**
@@ -40,7 +43,8 @@ public class DatastoreQuery extends QueryImpl {
     @Override
     protected List<Object> populateEntities(EntityMetadata m, Client client) {
         // TODO Auto-generated method stub
-        return null;
+        throw new NotImplementedException("populateEntities");
+        // return null;
     }
 
     /**
@@ -49,16 +53,14 @@ public class DatastoreQuery extends QueryImpl {
     @Override
     protected List<Object> recursivelyPopulateEntities(EntityMetadata m, Client client) {
         // TODO Auto-generated method stub
-        return null;
+        throw new NotImplementedException("recursivelyPopulateEntities");
+        // return null;
     }
 
-    /**
-     * Initialize and return your entity reader here.
-     */
     @Override
     protected EntityReader getReader() {
-        // TODO Auto-generated method stub
-        return null;
+        logger.info("requested entity reader");
+        return new DatastoreEntityReader(kunderaQuery, kunderaMetadata);
     }
 
     /**
@@ -68,18 +70,22 @@ public class DatastoreQuery extends QueryImpl {
     @Override
     protected int onExecuteUpdate() {
         // TODO Auto-generated method stub
-        return 0;
+        throw new NotImplementedException("onExecuteUpdate");
+        // return 0;
     }
 
     @Override
     public void close() {
-        // TODO Auto-generated method stub
-
+        // TODO seems no one use this
+        throw new NotImplementedException("close");
     }
 
     @Override
     public Iterator iterate() {
-        // TODO Auto-generated method stub
-        return null;
+        // TODO If planning to build scrolling/pagination, then have a look at ResultIterator implementation
+        //return new ResultIterator(...)
+        throw new NotImplementedException("iterate");
+        // return null;
     }
+
 }

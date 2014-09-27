@@ -10,15 +10,25 @@ import com.impetus.kundera.index.IndexManager;
 import com.impetus.kundera.metadata.KunderaMetadataManager;
 import com.impetus.kundera.metadata.model.ClientMetadata;
 import com.impetus.kundera.metadata.model.EntityMetadata;
+import com.impetus.kundera.metadata.model.MetamodelImpl;
 import com.impetus.kundera.metadata.model.PersistenceUnitMetadata;
+import com.impetus.kundera.metadata.model.attributes.AbstractAttribute;
+import com.impetus.kundera.metadata.model.type.AbstractManagedType;
 import com.impetus.kundera.persistence.EntityManagerFactoryImpl.KunderaMetadata;
 import com.impetus.kundera.persistence.EntityReader;
 import com.impetus.kundera.persistence.context.jointable.JoinTableData;
+import com.impetus.kundera.utils.KunderaCoreUtils;
+import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.persistence.metamodel.Attribute;
+import javax.persistence.metamodel.EntityType;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Fabio Arcidiacono.
@@ -37,6 +47,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                               String persistenceUnit, final ClientMetadata clientMetadata, IndexManager indexManager,
                               EntityReader reader, final DatastoreService datastore) {
         super(kunderaMetadata, properties, persistenceUnit);
+        logger.info("client constructor");
         this.reader = reader;
         this.datastore = datastore;
         this.indexManager = indexManager;
@@ -73,12 +84,51 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
      */
     @Override
     protected void onPersist(EntityMetadata entityMetadata, Object entity, Object id, List<RelationHolder> rlHolders) {
-        // TODO Auto-generated method stub
+
+        MetamodelImpl metamodel = KunderaMetadataManager.getMetamodel(kunderaMetadata,
+                entityMetadata.getPersistenceUnit());
+
+        EntityType entityType = metamodel.entity(entityMetadata.getEntityClazz());
+        logger.info("Persisting entity " + entity + " into " + entityMetadata.getSchema() + "." + entityMetadata.getTableName()
+                + " for " + id);
+
+        // Set<Attribute> attributes = entityType.getAttributes();
+        //
+        // // attribute handling TODO extract method
+        // for (Attribute attribute : attributes){
+        //     // by pass association. TODO understand this isAssociation()
+        //     if (!attribute.isAssociation()){
+        //
+        //     }
+        // }
+        //
+        // // Iterate over relations  TODO extract method
+        // if (rlHolders != null && !rlHolders.isEmpty()) {
+        //     for (RelationHolder rh : rlHolders) {
+        //         String relationName = rh.getRelationName();
+        //         Object valueObj = rh.getRelationValue();
+        //
+        //         if (!StringUtils.isEmpty(relationName) && valueObj != null) {
+        //
+        //         }
+        //     }
+        // }
+        //
+        //
+        // //descriminator TODO extract method
+        // String discrColumn = ((AbstractManagedType) entityType).getDiscriminatorColumn();
+        // String discrValue = ((AbstractManagedType) entityType).getDiscriminatorValue();
+        //
+        // if (discrColumn != null && discrValue != null){
+        //
+        // }
+
     }
 
     @Override
     public void persistJoinTable(JoinTableData joinTableData) {
         // TODO Auto-generated method stub
+        throw new NotImplementedException("");
     }
 
     // Find operations
@@ -89,32 +139,46 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
      */
     @Override
     public Object find(Class entityClass, Object key) {
+        EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entityClass);
+        Object entity = null;
         // TODO Auto-generated method stub
-        return null;
+        throw new NotImplementedException("find(Class entityClass, Object key)");
+        // return entity;
     }
 
     @Override
     public <E> List<E> findAll(Class<E> entityClass, String[] columnsToSelect, Object... keys) {
-        // TODO Auto-generated method stub
-        return null;
+        logger.info("findAll");
+        List results = new ArrayList();
+        for (Object key : keys) {
+            Object object = find(entityClass, key);
+            if (object != null) {
+                results.add(object);
+            }
+        }
+        logger.info(results.toString());
+        return results;
     }
 
     @Override
     public <E> List<E> find(Class<E> entityClass, Map<String, String> embeddedColumnMap) {
         // TODO Auto-generated method stub
-        return null;
+        throw new NotImplementedException("find ... embeddedColumnMap");
+        // return null;
     }
 
     @Override
     public Object[] findIdsByColumn(String schemaName, String tableName, String pKeyName, String columnName, Object columnValue, Class entityClazz) {
         // TODO Auto-generated method stub
-        return new Object[0];
+        throw new NotImplementedException("findIdsByColumn");
+        // return null;
     }
 
     @Override
     public List<Object> findByRelation(String colName, Object colValue, Class entityClazz) {
         // TODO Auto-generated method stub
-        return null;
+        throw new NotImplementedException("findByRelation");
+        //return null;
     }
 
     // Delete operations
@@ -125,19 +189,24 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
      */
     @Override
     public void delete(Object entity, Object pKey) {
+        EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entity.getClass());
         // TODO Auto-generated method stub
+        throw new NotImplementedException("delete");
     }
 
     @Override
     public void deleteByColumn(String schemaName, String tableName, String columnName, Object columnValue) {
         // TODO Auto-generated method stub
+        throw new NotImplementedException("deleteByColumn");
     }
 
     //Get operation
+
     @Override
     public <E> List<E> getColumnsById(String schemaName, String tableName, String pKeyColumnName, String columnName, Object pKeyColumnValue, Class columnJavaType) {
         // TODO Auto-generated method stub
-        return null;
+        throw new NotImplementedException("getColumnsById");
+        // return null;
     }
 
     private void setBatchSize(String persistenceUnit, Map<String, Object> puProperties) {
