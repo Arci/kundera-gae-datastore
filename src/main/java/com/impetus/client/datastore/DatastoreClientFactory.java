@@ -15,9 +15,7 @@ import java.util.Map;
 
 /**
  * @author Fabio Arcidiacono.
- *
- * Used by Kundera to instantiate the Client.
- *
+ *         <p>Used by Kundera to instantiate the Client.</p>
  */
 public class DatastoreClientFactory extends GenericClientFactory {
 
@@ -33,14 +31,35 @@ public class DatastoreClientFactory extends GenericClientFactory {
         setExternalProperties(puProperties);
     }
 
-
     @Override
     protected Object createPoolOrConnection() {
+        /**
+         * TODO manage external properties? probably not but need for specific properties
+         * see https://github.com/impetus-opensource/Kundera/wiki/Data-store-Specific-Configuration
+         * and https://github.com/impetus-opensource/Kundera/wiki/Common-Configuration\
+         */
+        // PersistenceUnitMetadata persistenceUnitMetadata = kunderaMetadata.getApplicationMetadata()
+        //        .getPersistenceUnitMetadata(getPersistenceUnit());
+        // Properties props = persistenceUnitMetadata.getProperties();
+        // String keyspace = null;
+        // String poolSize = null;
+        // if(externalProperties != null) {
+        //     keyspace = (String) externalProperties.get(PersistenceProperties.KUNDERA_KEYSPACE);
+        //     poolSize = (String) externalProperties.get(PersistenceProperties.KUNDERA_POOL_SIZE_MAX_ACTIVE);
+        // }
+        // if(keyspace == null) {
+        //      keyspace = (String) props.get(PersistenceProperties.KUNDERA_KEYSPACE);
+        // }
+        // if (poolSize == null) {
+        //     poolSize = props.getProperty(PersistenceProperties.KUNDERA_POOL_SIZE_MAX_ACTIVE);
+        // }
+        //
+        // DatastoreServiceConfig config = withReadPolicy(new ReadPolicy(ReadPolicy.Consistency.EVENTUAL));
+        // datastore = DatastoreServiceFactory.getDatastoreService(config);
         logger.info("Getting reference to datastore");
         datastore = DatastoreServiceFactory.getDatastoreService();
         return datastore;
     }
-
 
     @Override
     protected Client instantiateClient(String persistenceUnit) {
@@ -54,11 +73,12 @@ public class DatastoreClientFactory extends GenericClientFactory {
         return false;
     }
 
-
     @Override
     public void destroy() {
         logger.info("Destroying");
-        indexManager.close();
+        if (indexManager != null) {
+            indexManager.close();
+        }
         if (schemaManager != null) {
             schemaManager.dropSchema();
         }
@@ -69,25 +89,27 @@ public class DatastoreClientFactory extends GenericClientFactory {
 
     @Override
     public SchemaManager getSchemaManager(Map<String, Object> puProperties) {
+        logger.info("Requested schemaManager");
         if (schemaManager == null) {
             initializePropertyReader();
             setExternalProperties(puProperties);
-            schemaManager = new DatastoreSchemaManager(DatastoreClientFactory.class.getName(), puProperties, kunderaMetadata);
+            schemaManager = new DatastoreSchemaManager(this.getClass().getName(), puProperties, kunderaMetadata);
         }
         return schemaManager;
-    }
-
-    private void initializePropertyReader() {
-        if (propertyReader == null) {
-            propertyReader = new DatastorePropertyReader(externalProperties, kunderaMetadata.getApplicationMetadata()
-                    .getPersistenceUnitMetadata(getPersistenceUnit()));
-            propertyReader.read(getPersistenceUnit());
-        }
     }
 
     @Override
     protected void initializeLoadBalancer(String loadBalancingPolicyName) {
         throw new UnsupportedOperationException("Load balancing feature is not supported in "
                 + this.getClass().getSimpleName());
+    }
+
+    private void initializePropertyReader() {
+        logger.info("Requested propertyReaded");
+        if (propertyReader == null) {
+            propertyReader = new DatastorePropertyReader(externalProperties, kunderaMetadata.getApplicationMetadata()
+                    .getPersistenceUnitMetadata(getPersistenceUnit()));
+            propertyReader.read(getPersistenceUnit());
+        }
     }
 }

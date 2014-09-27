@@ -43,25 +43,21 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
     @Override
     protected void validate(List<TableInfo> tableInfos) {
         // TODO Auto-generated method stub
-
     }
 
     @Override
     protected void update(List<TableInfo> tableInfos) {
         // TODO Auto-generated method stub
-
     }
 
     @Override
     protected void create(List<TableInfo> tableInfos) {
         // TODO Auto-generated method stub
-
     }
 
     @Override
     protected void create_drop(List<TableInfo> tableInfos) {
         // TODO Auto-generated method stub
-
     }
 
     /**
@@ -71,7 +67,6 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
     @Override
     public void dropSchema() {
         // TODO Auto-generated method stub
-
     }
 
     @Override

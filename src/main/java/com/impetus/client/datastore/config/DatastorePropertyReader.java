@@ -2,7 +2,6 @@ package com.impetus.client.datastore.config;
 
 import com.impetus.kundera.configure.AbstractPropertyReader;
 import com.impetus.kundera.configure.ClientProperties;
-import com.impetus.kundera.configure.ClientProperties.DataStore;
 import com.impetus.kundera.configure.PropertyReader;
 import com.impetus.kundera.metadata.model.PersistenceUnitMetadata;
 import org.slf4j.Logger;
@@ -44,6 +43,5 @@ public class DatastorePropertyReader extends AbstractPropertyReader implements P
         private void setClientProperties(ClientProperties clientProperties) {
             this.clientProperties = clientProperties;
         }
-
     }
 }

@@ -7,7 +7,6 @@
     <parent>
         <groupId>com.impetus</groupId>
         <artifactId>kundera</artifactId>
-        <!-- TODO version must be set to 2.14-SNAPSHOT -->
         <version>2.13</version>
     </parent>
     <groupId>com.impetus.kundera.client</groupId>

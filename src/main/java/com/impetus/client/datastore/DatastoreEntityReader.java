@@ -14,9 +14,7 @@ import java.util.List;
 
 /**
  * @author Fabio Arcidiacono.
- *
- * Used by Kundera to translate the queries into correct client method calls.
- *
+ *         <p/>Used by Kundera to translate the queries into correct client method calls.</p>
  */
 public class DatastoreEntityReader extends AbstractEntityReader implements EntityReader {
 
@@ -36,7 +34,6 @@ public class DatastoreEntityReader extends AbstractEntityReader implements Entit
      */
     @Override
     public List<EnhanceEntity> populateRelation(EntityMetadata m, Client client, int maxResults) {
-        // TODO understand more deeply (all implementatios act like this)
         throw new UnsupportedOperationException("Method supported not required for Datastore");
     }
 
