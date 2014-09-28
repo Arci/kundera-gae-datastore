@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Queue;
 
 /**
  * @author Fabio Arcidiacono.
@@ -34,7 +33,7 @@ public class DatastoreQuery extends QueryImpl {
      */
     public DatastoreQuery(KunderaQuery kunderaQuery, PersistenceDelegator persistenceDelegator, EntityManagerFactoryImpl.KunderaMetadata kunderaMetadata) {
         super(kunderaQuery, persistenceDelegator, kunderaMetadata);
-        logger.info("query constructor");
+        System.out.println("DatastoreQuery.DatastoreQuery");
     }
 
     /**
@@ -59,7 +58,7 @@ public class DatastoreQuery extends QueryImpl {
 
     @Override
     protected EntityReader getReader() {
-        logger.info("requested entity reader");
+        System.out.println("DatastoreQuery.getReader");
         return new DatastoreEntityReader(kunderaQuery, kunderaMetadata);
     }
 
@@ -87,5 +86,4 @@ public class DatastoreQuery extends QueryImpl {
         throw new NotImplementedException("iterate");
         // return null;
     }
-
 }

@@ -12,29 +12,21 @@ import com.impetus.kundera.metadata.model.ClientMetadata;
 import com.impetus.kundera.metadata.model.EntityMetadata;
 import com.impetus.kundera.metadata.model.MetamodelImpl;
 import com.impetus.kundera.metadata.model.PersistenceUnitMetadata;
-import com.impetus.kundera.metadata.model.attributes.AbstractAttribute;
-import com.impetus.kundera.metadata.model.type.AbstractManagedType;
 import com.impetus.kundera.persistence.EntityManagerFactoryImpl.KunderaMetadata;
 import com.impetus.kundera.persistence.EntityReader;
 import com.impetus.kundera.persistence.context.jointable.JoinTableData;
-import com.impetus.kundera.utils.KunderaCoreUtils;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EntityType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * @author Fabio Arcidiacono.
- *
- * The gateway to CRUD operations on database, except for queries.
- *
+ *         <p>The gateway to CRUD operations on database, except for queries.<p/>
  */
 public class DatastoreClient extends ClientBase implements Client<DatastoreQuery> {
 
@@ -47,7 +39,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                               String persistenceUnit, final ClientMetadata clientMetadata, IndexManager indexManager,
                               EntityReader reader, final DatastoreService datastore) {
         super(kunderaMetadata, properties, persistenceUnit);
-        logger.info("client constructor");
+        System.out.println("DatastoreClient.DatastoreClient");
         this.reader = reader;
         this.datastore = datastore;
         this.indexManager = indexManager;
@@ -55,7 +47,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         setBatchSize(persistenceUnit, this.externalProperties);
     }
 
-    public void setBatchSize(int batchSize){
+    public void setBatchSize(int batchSize) {
         this.batchSize = batchSize;
     }
 
@@ -89,8 +81,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 entityMetadata.getPersistenceUnit());
 
         EntityType entityType = metamodel.entity(entityMetadata.getEntityClazz());
-        System.out.println("Persisting entity " + entity + " into " + entityMetadata.getSchema() + "." + entityMetadata.getTableName()
-                + " for " + id);
+        System.out.println("[DatastoreClient.onPersist] Persisting entity " + entity + " into " + entityMetadata.getSchema() + "." + entityMetadata.getTableName()
+                + " with id " + id);
 
         // Set<Attribute> attributes = entityType.getAttributes();
         //
@@ -122,6 +114,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         // if (discrColumn != null && discrValue != null){
         //
         // }
+
         throw new NotImplementedException("");
     }
 
@@ -148,7 +141,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
     @Override
     public <E> List<E> findAll(Class<E> entityClass, String[] columnsToSelect, Object... keys) {
-        logger.info("findAll");
+        System.out.println("DatastoreClient.findAll");
         List results = new ArrayList();
         for (Object key : keys) {
             Object object = find(entityClass, key);
@@ -156,7 +149,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 results.add(object);
             }
         }
-        logger.info(results.toString());
+        System.out.println(this.getClass().getCanonicalName() + results.toString());
         return results;
     }
 
@@ -217,8 +210,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
             if (batch_Size != null) {
                 setBatchSize(Integer.valueOf(batch_Size));
             }
-        }
-        else if (batch_Size == null) {
+        } else if (batch_Size == null) {
             PersistenceUnitMetadata puMetadata = KunderaMetadataManager.getPersistenceUnitMetadata(kunderaMetadata,
                     persistenceUnit);
             setBatchSize(puMetadata.getBatchSize());

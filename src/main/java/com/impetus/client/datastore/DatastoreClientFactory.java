@@ -26,7 +26,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
 
     @Override
     public void initialize(Map<String, Object> puProperties) {
-        logger.info("initialize");
+        System.out.println("DatastoreClientFactory.initialize");
         reader = new DatastoreEntityReader(kunderaMetadata);
         initializePropertyReader();
         setExternalProperties(puProperties);
@@ -34,6 +34,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
 
     @Override
     protected Object createPoolOrConnection() {
+        System.out.println("DatastoreClientFactory.createPoolOrConnection");
         /**
          * TODO manage external properties? probably not but need for specific properties
          * see https://github.com/impetus-opensource/Kundera/wiki/Data-store-Specific-Configuration
@@ -57,14 +58,13 @@ public class DatastoreClientFactory extends GenericClientFactory {
         //
         // DatastoreServiceConfig config = withReadPolicy(new ReadPolicy(ReadPolicy.Consistency.EVENTUAL));
         // datastore = DatastoreServiceFactory.getDatastoreService(config);
-        logger.info("getting reference to datastore");
         datastore = DatastoreServiceFactory.getDatastoreService();
         return datastore;
     }
 
     @Override
     protected Client instantiateClient(String persistenceUnit) {
-        logger.info("instantiate new DatastoreClient");
+        System.out.println("DatastoreClientFactory.instantiateClient");
         return new DatastoreClient(kunderaMetadata, externalProperties, persistenceUnit, clientMetadata,
                 indexManager, reader, datastore);
     }
@@ -76,7 +76,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
 
     @Override
     public void destroy() {
-        logger.info("destroying");
+        System.out.println("DatastoreClientFactory.destroy");
         if (indexManager != null) {
             indexManager.close();
         }
@@ -90,7 +90,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
 
     @Override
     public SchemaManager getSchemaManager(Map<String, Object> puProperties) {
-        logger.info("requested schemaManager");
+        System.out.println("DatastoreClientFactory.getSchemaManager");
         if (schemaManager == null) {
             initializePropertyReader();
             setExternalProperties(puProperties);
@@ -106,7 +106,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
     }
 
     private void initializePropertyReader() {
-        logger.info("requested propertyReaded");
+        System.out.println("DatastoreClientFactory.initializePropertyReader");
         if (propertyReader == null) {
             propertyReader = new DatastorePropertyReader(externalProperties, kunderaMetadata.getApplicationMetadata()
                     .getPersistenceUnitMetadata(getPersistenceUnit()));
