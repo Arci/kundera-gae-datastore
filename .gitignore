@@ -5,14 +5,14 @@
 *.iws
 *.iml
 .idea/
-*.ipr
-
-## Maven stuff ##
-target/
-test-output/
+*.ip
 
 ## Eclipse stuff ##
 .project
 .classpath
 .settings
 bin
+
+## Maven stuff ##
+target/
+test-output/

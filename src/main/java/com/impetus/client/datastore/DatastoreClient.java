@@ -89,7 +89,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 entityMetadata.getPersistenceUnit());
 
         EntityType entityType = metamodel.entity(entityMetadata.getEntityClazz());
-        logger.info("Persisting entity " + entity + " into " + entityMetadata.getSchema() + "." + entityMetadata.getTableName()
+        System.out.println("Persisting entity " + entity + " into " + entityMetadata.getSchema() + "." + entityMetadata.getTableName()
                 + " for " + id);
 
         // Set<Attribute> attributes = entityType.getAttributes();
@@ -122,7 +122,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         // if (discrColumn != null && discrValue != null){
         //
         // }
-
+        throw new NotImplementedException("");
     }
 
     @Override
