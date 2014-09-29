@@ -34,7 +34,6 @@ public class DatastorePropertyReader extends AbstractPropertyReader implements P
         private ClientProperties clientProperties;
 
         private DatastoreSchemaMetadata() {
-
         }
 
         public ClientProperties getClientProperties() {

@@ -27,13 +27,12 @@ public class DatastoreQuery extends QueryImpl {
     /**
      * Instantiates a new query impl.
      *
-     * @param kunderaQuery
+     * @param kunderaQuery         the kundera query object
      * @param persistenceDelegator the persistence delegator
-     * @param kunderaMetadata
+     * @param kunderaMetadata      kundera metadata
      */
     public DatastoreQuery(KunderaQuery kunderaQuery, PersistenceDelegator persistenceDelegator, EntityManagerFactoryImpl.KunderaMetadata kunderaMetadata) {
         super(kunderaQuery, persistenceDelegator, kunderaMetadata);
-        System.out.println("DatastoreQuery.DatastoreQuery");
     }
 
     /**
@@ -41,8 +40,9 @@ public class DatastoreQuery extends QueryImpl {
      */
     @Override
     protected List<Object> populateEntities(EntityMetadata m, Client client) {
+        System.out.println("DatastoreQuery.populateEntities");
         // TODO Auto-generated method stub
-        throw new NotImplementedException("populateEntities");
+        throw new NotImplementedException();
         // return null;
     }
 
@@ -51,8 +51,9 @@ public class DatastoreQuery extends QueryImpl {
      */
     @Override
     protected List<Object> recursivelyPopulateEntities(EntityMetadata m, Client client) {
+        System.out.println("DatastoreQuery.recursivelyPopulateEntities");
         // TODO Auto-generated method stub
-        throw new NotImplementedException("recursivelyPopulateEntities");
+        throw new NotImplementedException();
         // return null;
     }
 
@@ -68,22 +69,24 @@ public class DatastoreQuery extends QueryImpl {
      */
     @Override
     protected int onExecuteUpdate() {
+        System.out.println("DatastoreQuery.onExecuteUpdate");
         // TODO Auto-generated method stub
-        throw new NotImplementedException("onExecuteUpdate");
+        throw new NotImplementedException();
         // return 0;
     }
 
     @Override
     public void close() {
+        System.out.println("DatastoreQuery.close");
         // TODO seems no one use this
-        throw new NotImplementedException("close");
     }
 
     @Override
     public Iterator iterate() {
+        System.out.println("DatastoreQuery.iterate");
         // TODO If planning to build scrolling/pagination, then have a look at ResultIterator implementation
         //return new ResultIterator(...)
-        throw new NotImplementedException("iterate");
+        throw new NotImplementedException();
         // return null;
     }
 }

@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * @author Fabio Arcidiacono.
- *         <p/>Used by Kundera to translate the queries into correct client method calls.</p>
+ *         <p>Used by Kundera to translate the queries into correct client method calls.</p>
  */
 public class DatastoreEntityReader extends AbstractEntityReader implements EntityReader {
 

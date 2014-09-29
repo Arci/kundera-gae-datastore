@@ -1,6 +1,7 @@
 package com.impetus.client.datastore;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.Entity;
 import com.impetus.client.datastore.query.DatastoreQuery;
 import com.impetus.kundera.PersistenceProperties;
 import com.impetus.kundera.client.Client;
@@ -15,20 +16,25 @@ import com.impetus.kundera.metadata.model.PersistenceUnitMetadata;
 import com.impetus.kundera.persistence.EntityManagerFactoryImpl.KunderaMetadata;
 import com.impetus.kundera.persistence.EntityReader;
 import com.impetus.kundera.persistence.context.jointable.JoinTableData;
+import com.impetus.kundera.property.PropertyAccessorHelper;
 import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EntityType;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * @author Fabio Arcidiacono.
- *         <p>The gateway to CRUD operations on database, except for queries.<p/>
+ *         <p>The gateway to CRUD operations on database, except for queries.</p>
  */
 public class DatastoreClient extends ClientBase implements Client<DatastoreQuery> {
+    // for auto id generation implement AutoGenerator
 
     private static final Logger logger = LoggerFactory.getLogger(DatastoreClient.class);
     private EntityReader reader;
@@ -39,7 +45,6 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                               String persistenceUnit, final ClientMetadata clientMetadata, IndexManager indexManager,
                               EntityReader reader, final DatastoreService datastore) {
         super(kunderaMetadata, properties, persistenceUnit);
-        System.out.println("DatastoreClient.DatastoreClient");
         this.reader = reader;
         this.datastore = datastore;
         this.indexManager = indexManager;
@@ -68,33 +73,42 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         return DatastoreQuery.class;
     }
 
-    // Persist operation
-
-    /**
-     * A Node object would be available in this method that holds data variable referring to your entity
-     * object. This method is responsible for writing node data to underlying database.
+    /*
+     * Persist operations
      */
+
     @Override
     protected void onPersist(EntityMetadata entityMetadata, Object entity, Object id, List<RelationHolder> rlHolders) {
 
         MetamodelImpl metamodel = KunderaMetadataManager.getMetamodel(kunderaMetadata,
                 entityMetadata.getPersistenceUnit());
 
-        EntityType entityType = metamodel.entity(entityMetadata.getEntityClazz());
-        System.out.println("[DatastoreClient.onPersist] Persisting entity " + entity + " into " + entityMetadata.getSchema() + "." + entityMetadata.getTableName()
-                + " with id " + id);
+        System.out.println("entityMetadata = [" + entityMetadata + "], entity = [" + entity + "], id = [" + id + "], rlHolders = [" + rlHolders + "]");
 
-        // Set<Attribute> attributes = entityType.getAttributes();
-        //
-        // // attribute handling TODO extract method
-        // for (Attribute attribute : attributes){
-        //     // by pass association. TODO understand this isAssociation()
-        //     if (!attribute.isAssociation()){
-        //
-        //     }
-        // }
-        //
-        // // Iterate over relations  TODO extract method
+        EntityType entityType = metamodel.entity(entityMetadata.getEntityClazz());
+
+        Entity gaeEntity = new Entity(entityType.getName());
+        handleAttributes(gaeEntity, entity, entityType.getAttributes());
+        handleRelations(gaeEntity, rlHolders);
+        handleDiscriminatorColumn(gaeEntity, entityType);
+
+        datastore.put(gaeEntity);
+    }
+
+    private void handleAttributes(Entity gaeEntity, Object entity, Set<Attribute> attributes) {
+        for (Attribute attribute : attributes) {
+            // by pass association. TODO understand this isAssociation()
+            if (!attribute.isAssociation()) {
+                Field field = (Field) attribute.getJavaMember();
+                Object value = PropertyAccessorHelper.getObject(entity, field);
+                gaeEntity.setProperty(attribute.getName(), value);
+            }
+        }
+    }
+
+    private void handleRelations(Entity gaeEntity, List<RelationHolder> rlHolders) {
+        //System.out.println("gaeEntity = [" + gaeEntity + "], rlHolders = [" + rlHolders + "]");
+        // TODO Iterate over relations
         // if (rlHolders != null && !rlHolders.isEmpty()) {
         //     for (RelationHolder rh : rlHolders) {
         //         String relationName = rh.getRelationName();
@@ -105,26 +119,28 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         //         }
         //     }
         // }
-        //
-        //
-        // //descriminator TODO extract method
+    }
+
+    private void handleDiscriminatorColumn(Entity gaeEntity, EntityType entityType) {
+        //System.out.println("gaeEntity = [" + gaeEntity + "], entityType = [" + entityType + "]");
+        // TODO discriminator
         // String discrColumn = ((AbstractManagedType) entityType).getDiscriminatorColumn();
         // String discrValue = ((AbstractManagedType) entityType).getDiscriminatorValue();
         //
-        // if (discrColumn != null && discrValue != null){
+        // if (discrColumn != null && discrValue != null) {
         //
         // }
-
-        throw new NotImplementedException("");
     }
 
     @Override
     public void persistJoinTable(JoinTableData joinTableData) {
         // TODO Auto-generated method stub
-        throw new NotImplementedException("");
+        throw new NotImplementedException();
     }
 
-    // Find operations
+    /*
+     * Find operations
+     */
 
     /**
      * This is called by Kundera when find method is invoked on Entity Manager. This method is responsible
@@ -132,10 +148,9 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
      */
     @Override
     public Object find(Class entityClass, Object key) {
-        EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entityClass);
-        Object entity = null;
+        System.out.println("DatastoreClient.find");
         // TODO Auto-generated method stub
-        throw new NotImplementedException("find(Class entityClass, Object key)");
+        throw new NotImplementedException();
         // return entity;
     }
 
@@ -155,26 +170,31 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
     @Override
     public <E> List<E> find(Class<E> entityClass, Map<String, String> embeddedColumnMap) {
+        System.out.println("DatastoreClient.find");
         // TODO Auto-generated method stub
-        throw new NotImplementedException("find ... embeddedColumnMap");
+        throw new NotImplementedException();
         // return null;
     }
 
     @Override
     public Object[] findIdsByColumn(String schemaName, String tableName, String pKeyName, String columnName, Object columnValue, Class entityClazz) {
+        System.out.println("DatastoreClient.findIdsByColumn");
         // TODO Auto-generated method stub
-        throw new NotImplementedException("findIdsByColumn");
+        throw new NotImplementedException();
         // return null;
     }
 
     @Override
     public List<Object> findByRelation(String colName, Object colValue, Class entityClazz) {
+        System.out.println("DatastoreClient.findByRelation");
         // TODO Auto-generated method stub
-        throw new NotImplementedException("findByRelation");
+        throw new NotImplementedException();
         //return null;
     }
 
-    // Delete operations
+    /*
+     * Delete operations
+     */
 
     /**
      * This is called by Kundera when a remove method is invoked on entity manager.
@@ -182,23 +202,27 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
      */
     @Override
     public void delete(Object entity, Object pKey) {
-        EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entity.getClass());
+        System.out.println("DatastoreClient.delete");
         // TODO Auto-generated method stub
-        throw new NotImplementedException("delete");
+        throw new NotImplementedException();
     }
 
     @Override
     public void deleteByColumn(String schemaName, String tableName, String columnName, Object columnValue) {
+        System.out.println("DatastoreClient.deleteByColumn");
         // TODO Auto-generated method stub
-        throw new NotImplementedException("deleteByColumn");
+        throw new NotImplementedException();
     }
 
-    //Get operation
+    /*
+     * Get operation
+     */
 
     @Override
     public <E> List<E> getColumnsById(String schemaName, String tableName, String pKeyColumnName, String columnName, Object pKeyColumnValue, Class columnJavaType) {
+        System.out.println("DatastoreClient.getColumnsById");
         // TODO Auto-generated method stub
-        throw new NotImplementedException("getColumnsById");
+        throw new NotImplementedException();
         // return null;
     }
 
