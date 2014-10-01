@@ -1,8 +1,8 @@
 package com.impetus.client.datastore;
 
-import com.google.appengine.api.datastore.DatastoreService;
-import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.*;
 import com.impetus.client.datastore.query.DatastoreQuery;
+import com.impetus.kundera.KunderaException;
 import com.impetus.kundera.PersistenceProperties;
 import com.impetus.kundera.client.Client;
 import com.impetus.kundera.client.ClientBase;
@@ -39,7 +39,6 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     private static final Logger logger = LoggerFactory.getLogger(DatastoreClient.class);
     private EntityReader reader;
     private DatastoreService datastore;
-    private Random random;
     private int batchSize;
 
     protected DatastoreClient(final KunderaMetadata kunderaMetadata, Map<String, Object> properties,
@@ -50,7 +49,6 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         this.datastore = datastore;
         this.indexManager = indexManager;
         this.clientMetadata = clientMetadata;
-        this.random = new Random();
         setBatchSize(persistenceUnit, this.externalProperties);
     }
 
@@ -90,18 +88,13 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         EntityType entityType = metamodel.entity(entityMetadata.getEntityClazz());
 
         // TODO decide
-        // this way datastore generate id
-        // entity must have an id annotated with @Id
+        // this way datastore generate id, entity must have an id annotated with @Id
         // and must have a value different from null
-        // Entity gaeEntity = new Entity(entityType.getName());
-
-        // is also possible to use the one generated
-        // need to define a Long id annotated with @Id
-        // and with @GeneratedValue()
+        // is also possible to use the one generated through @GeneratedValue()
+        // need to define in the entity an id annotated with @Id
         // apparently is also setted back to the entity
-        Entity gaeEntity = new Entity(entityType.getName(), (Long) id);
-
-        System.out.println(entityMetadata.getIdAttribute());
+        // keyName can be Long or String
+        Entity gaeEntity = new Entity(entityType.getName(), (String) id);
 
         handleAttributes(gaeEntity, entity, metamodel, entityMetadata, entityType.getAttributes());
         handleRelations(gaeEntity, rlHolders);
@@ -112,7 +105,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
     @Override
     public Object generate() {
-        return random.nextLong();
+        //return UUID.randomUUID().getLeastSignificantBits();
+        return UUID.randomUUID();
     }
 
     private void handleAttributes(Entity gaeEntity, Object entity, MetamodelImpl metamodel, EntityMetadata metadata, Set<Attribute> attributes) {
@@ -144,7 +138,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         if (rlHolders != null && !rlHolders.isEmpty()) {
             for (RelationHolder rh : rlHolders) {
                 String relationName = rh.getRelationName();
-                // TODO maybe need a key or something like parent, not valueObj
+                // TODO maybe need a key or something like parent, not valueObj (which is the referenced id)
                 Object valueObj = rh.getRelationValue();
 
                 if (!StringUtils.isEmpty(relationName) && valueObj != null) {
@@ -178,11 +172,16 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
      * for fetching data from underlying database for given entity class and primary key.
      */
     @Override
-    public Object find(Class entityClass, Object key) {
+    public Object find(Class entityClass, Object id) {
         System.out.println("DatastoreClient.find");
-        // TODO Auto-generated method stub
-        throw new NotImplementedException();
-        // return entity;
+        try {
+            // keyName can be Long or String
+            Key key = KeyFactory.createKey(entityClass.toString(), (String) id);
+            Entity entity = datastore.get(key);
+            return entity;
+        } catch (EntityNotFoundException e) {
+            throw new KunderaException("Entity with id " + id + " not found");
+        }
     }
 
     @Override
@@ -235,6 +234,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     public void delete(Object entity, Object pKey) {
         System.out.println("DatastoreClient.delete");
         // TODO Auto-generated method stub
+        // Find all then find the one with .getKey().equals(pkey) sounds like inefficiency
         throw new NotImplementedException();
     }
 

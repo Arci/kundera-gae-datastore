@@ -1,1 +1,1 @@
-mvn package -Dmaven.javadoc.skip=true && echo '' && cp target/kundera-gae-datastore-2.13.jar ../gae-kundera-test/lib/  && echo '.jar copied to lib/' && cp target/kundera-gae-datastore-2.13.jar ../gae-kundera-test/war/WEB-INF/lib/ && echo '.jar copied to war/WEB-INF/lib/'
+mvn package -Dmaven.javadoc.skip=true && echo '' && cp target/kundera-gae-datastore-2.13.jar ../kundera-test/lib/  && echo '.jar copied to lib/' && cp target/kundera-gae-datastore-2.13.jar ../kundera-test/war/WEB-INF/lib/ && echo '.jar copied to war/WEB-INF/lib/'
