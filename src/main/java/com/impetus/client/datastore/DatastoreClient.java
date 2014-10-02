@@ -2,10 +2,10 @@ package com.impetus.client.datastore;
 
 import com.google.appengine.api.datastore.*;
 import com.impetus.client.datastore.query.DatastoreQuery;
-import com.impetus.kundera.KunderaException;
 import com.impetus.kundera.PersistenceProperties;
 import com.impetus.kundera.client.Client;
 import com.impetus.kundera.client.ClientBase;
+import com.impetus.kundera.client.EnhanceEntity;
 import com.impetus.kundera.db.RelationHolder;
 import com.impetus.kundera.generator.AutoGenerator;
 import com.impetus.kundera.index.IndexManager;
@@ -79,59 +79,75 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
     @Override
     protected void onPersist(EntityMetadata entityMetadata, Object entity, Object id, List<RelationHolder> rlHolders) {
+        System.out.println("entityMetadata = [" + entityMetadata + "], entity = [" + entity + "], id = [" + id + "], rlHolders = [" + rlHolders + "]");
 
         MetamodelImpl metamodel = KunderaMetadataManager.getMetamodel(kunderaMetadata,
                 entityMetadata.getPersistenceUnit());
-
-        System.out.println("entityMetadata = [" + entityMetadata + "], entity = [" + entity + "], id = [" + id + "], rlHolders = [" + rlHolders + "]");
-
         EntityType entityType = metamodel.entity(entityMetadata.getEntityClazz());
 
-        // TODO decide
-        // this way datastore generate id, entity must have an id annotated with @Id
-        // and must have a value different from null
-        // is also possible to use the one generated through @GeneratedValue()
-        // need to define in the entity an id annotated with @Id
-        // apparently is also setted back to the entity
-        // keyName can be Long or String
-        Entity gaeEntity = new Entity(entityType.getName(), (String) id);
+        Entity gaeEntity = new Entity(entityType.getName(), stringify(id));
 
         handleAttributes(gaeEntity, entity, metamodel, entityMetadata, entityType.getAttributes());
         handleRelations(gaeEntity, rlHolders);
         handleDiscriminatorColumn(gaeEntity, entityType);
 
-        datastore.put(gaeEntity);
+        Key key = datastore.put(gaeEntity);
+
+        System.out.println("Key: [\n\t"
+                + key.getId() + "\n\t"
+                + key.getName() + "\n\t"
+                + key.getKind() + "\n\t"
+                + key.getAppId() + "\n]");
+    }
+
+    private String stringify(Object id) {
+        // datastore ids can be Long or String
+        return (String) id;
     }
 
     @Override
     public Object generate() {
-        //return UUID.randomUUID().getLeastSignificantBits();
+        /*
+         * use random UUID instead of datastore generated
+         * since here is not available entity Kind
+         * to use datastore.allocateIds and get
+         * a datastore generated key
+         *
+         * if a kind is available, a Key can be generated as follow
+         *
+         * KeyRange keyRange = datastore.allocateIds(entityType.getName(), 1L);
+         * Key key = keyRange.getStart();
+         */
         return UUID.randomUUID();
     }
 
     private void handleAttributes(Entity gaeEntity, Object entity, MetamodelImpl metamodel, EntityMetadata metadata, Set<Attribute> attributes) {
         for (Attribute attribute : attributes) {
-            // by pass id attribute, use datastore one
+            //by pass id attribute, is already stored by datastore as part of the key
             if (!attribute.equals(metadata.getIdAttribute())) {
-                // by pass association.   TODO verify this
+                // by pass association. TODO verify this
                 if (!attribute.isAssociation()) {
                     if (metamodel.isEmbeddable(((AbstractAttribute) attribute).getBindableJavaType())) {
-                        processEmbeddableAttribute(entity, metamodel, metadata, attribute);
+                        processEmbeddableAttribute(gaeEntity, entity, attribute, metamodel, metadata);
                     } else {
-                        Field field = (Field) attribute.getJavaMember();
-                        Object valueObj = PropertyAccessorHelper.getObject(entity, field);
-
-                        if (valueObj != null) {
-                            gaeEntity.setProperty(attribute.getName(), valueObj);
-                        }
+                        processAttribute(gaeEntity, entity, attribute);
                     }
                 }
             }
         }
     }
 
-    private void processEmbeddableAttribute(Object entity, MetamodelImpl metamodel, EntityMetadata metadata, Attribute attribute) {
+    private void processEmbeddableAttribute(Entity gaeEntity, Object entity, Attribute attribute, MetamodelImpl metamodel, EntityMetadata metadata) {
         // TODO Auto-generated method stub
+    }
+
+    private void processAttribute(Entity gaeEntity, Object entity, Attribute attribute) {
+        Field field = (Field) attribute.getJavaMember();
+        Object valueObj = PropertyAccessorHelper.getObject(entity, field);
+
+        if (valueObj != null) {
+            gaeEntity.setProperty(attribute.getName(), valueObj);
+        }
     }
 
     private void handleRelations(Entity gaeEntity, List<RelationHolder> rlHolders) {
@@ -140,6 +156,32 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 String relationName = rh.getRelationName();
                 // TODO maybe need a key or something like parent, not valueObj (which is the referenced id)
                 Object valueObj = rh.getRelationValue();
+
+                System.out.println("\nRelationValue:[ \n\t " + valueObj + "\n]\n");
+
+                System.out.println("\nRelationVia:[ \n\t " + rh.getRelationVia() + "\n]\n");
+
+                // TODO decide
+                // to retrieve the related object need to know
+                // the kind anf the id, maybe save as relation value
+                // kind.id so can be splitted by "."
+                //
+
+                // il problema è avere il kind, posso recuperarlo da Key.getKind()
+                // ma bisognerebbe riuscire a usare le key come id nelle entity
+                // come fa l'implementazione della jpa di google
+
+                // try {
+                //     String kind = rh.getRelationValue().toString().split(".")[0];
+                //     String embeddedId = rh.getRelationValue().toString().split(".")[1];
+                //     Key key = KeyFactory.createKey(kind, embeddedId);
+                //     Entity entity = datastore.get(key);
+                //     EmbeddedEntity embeddedEntity = new EmbeddedEntity();
+                //     embeddedEntity.setPropertiesFrom(entity);
+                //     gaeEntity.setProperty(relationName, embeddedEntity);
+                // } catch (EntityNotFoundException e) {
+                //     e.printStackTrace();
+                // }
 
                 if (!StringUtils.isEmpty(relationName) && valueObj != null) {
                     gaeEntity.setProperty(relationName, valueObj);
@@ -167,21 +209,47 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
      * Find operations
      */
 
-    /**
-     * This is called by Kundera when find method is invoked on Entity Manager. This method is responsible
-     * for fetching data from underlying database for given entity class and primary key.
+    /*
+     * is not called if entity is managed (yet created and retrieved)
+     * is called for un-managed ones
      */
     @Override
     public Object find(Class entityClass, Object id) {
         System.out.println("DatastoreClient.find");
         try {
-            // keyName can be Long or String
-            Key key = KeyFactory.createKey(entityClass.toString(), (String) id);
-            Entity entity = datastore.get(key);
-            return entity;
+            Key key = KeyFactory.createKey(entityClass.getSimpleName(), stringify(id));
+            Entity gaeEntity = datastore.get(key);
+            return initializeEntity(gaeEntity, entityClass);
         } catch (EntityNotFoundException e) {
-            throw new KunderaException("Entity with id " + id + " not found");
+            // No entity found
+            return null;
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
         }
+        return null;
+    }
+
+    private Object initializeEntity(Entity gaeEntity, Class entityClass) throws IllegalAccessException, InstantiationException {
+        EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entityClass);
+        String idColumnName = ((AbstractAttribute) entityMetadata.getIdAttribute()).getJPAColumnName();
+
+        // use reflection to instantiate the entity class
+        Object entity = entityMetadata.getEntityClazz().newInstance();
+        // use reflection to set entity fields
+        for (Field field : entityClass.getDeclaredFields()) {
+            if (field.getName().equals(idColumnName)) {
+                field.setAccessible(true);
+                field.set(entity, gaeEntity.getKey().getName());
+            } else if (gaeEntity.getProperties().containsKey(field.getName())) {
+                Object fieldValue = gaeEntity.getProperties().get(field.getName());
+                field.setAccessible(true);
+                field.set(entity, fieldValue);
+            }
+        }
+
+        return new EnhanceEntity(entity, gaeEntity.getKey().getName(), null);
     }
 
     @Override
@@ -189,7 +257,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("DatastoreClient.findAll");
         List results = new ArrayList();
         for (Object key : keys) {
-            Object object = find(entityClass, key);
+            Object object = this.find(entityClass, key);
             if (object != null) {
                 results.add(object);
             }

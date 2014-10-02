@@ -19,7 +19,6 @@ public class DatastorePropertyReader extends AbstractPropertyReader implements P
 
     public DatastorePropertyReader(Map externalProperties, PersistenceUnitMetadata puMetadata) {
         super(externalProperties, puMetadata);
-        System.out.println("DatastorePropertyReader.DatastorePropertyReader");
         dsmd = new DatastoreSchemaMetadata();
     }
 
