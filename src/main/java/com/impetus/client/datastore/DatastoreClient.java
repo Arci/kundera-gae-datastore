@@ -56,6 +56,20 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         this.batchSize = batchSize;
     }
 
+    private void setBatchSize(String persistenceUnit, Map<String, Object> puProperties) {
+        String batch_Size;
+        if (puProperties != null) {
+            batch_Size = (String) puProperties.get(PersistenceProperties.KUNDERA_BATCH_SIZE);
+            if (batch_Size != null) {
+                setBatchSize(Integer.valueOf(batch_Size));
+            }
+        } else {
+            PersistenceUnitMetadata puMetadata = KunderaMetadataManager.getPersistenceUnitMetadata(kunderaMetadata,
+                    persistenceUnit);
+            setBatchSize(puMetadata.getBatchSize());
+        }
+    }
+
     @Override
     public void close() {
         this.indexManager.flush();
@@ -73,12 +87,12 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         return DatastoreQuery.class;
     }
 
-    /*
-     * Persist operations
-     */
+    /*---------------------------------------------------------------------------------*/
+    /*----------------------------- PERSIST OPERATIONS -------------------------------*/
 
     @Override
     protected void onPersist(EntityMetadata entityMetadata, Object entity, Object id, List<RelationHolder> rlHolders) {
+        System.out.println("DatastoreClient.onPersist");
         System.out.println("entityMetadata = [" + entityMetadata + "], entity = [" + entity + "], id = [" + id + "], rlHolders = [" + rlHolders + "]");
 
         MetamodelImpl metamodel = KunderaMetadataManager.getMetamodel(kunderaMetadata,
@@ -91,13 +105,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         handleRelations(gaeEntity, rlHolders);
         handleDiscriminatorColumn(gaeEntity, entityType);
 
-        Key key = datastore.put(gaeEntity);
-
-        System.out.println("Key: [\n\t"
-                + key.getId() + "\n\t"
-                + key.getName() + "\n\t"
-                + key.getKind() + "\n\t"
-                + key.getAppId() + "\n]");
+        datastore.put(gaeEntity);
     }
 
     private String stringify(Object id) {
@@ -109,14 +117,13 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     public Object generate() {
         /*
          * use random UUID instead of datastore generated
-         * since here is not available entity Kind
-         * to use datastore.allocateIds and get
-         * a datastore generated key
+         * since here is not available entityClass.
          *
-         * if a kind is available, a Key can be generated as follow
+         * If the entityClass is available, a Key can be generated as follow
          *
          * KeyRange keyRange = datastore.allocateIds(entityType.getName(), 1L);
          * Key key = keyRange.getStart();
+         *
          */
         return UUID.randomUUID();
     }
@@ -205,17 +212,17 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         throw new NotImplementedException();
     }
 
-    /*
-     * Find operations
-     */
+    /*---------------------------------------------------------------------------------*/
+    /*------------------------------ FIND OPERATIONS ----------------------------------*/
 
     /*
-     * is not called if entity is managed (yet created and retrieved)
+     * is not called if entity is managed
      * is called for un-managed ones
      */
     @Override
     public Object find(Class entityClass, Object id) {
         System.out.println("DatastoreClient.find");
+        System.out.println("entityClass = [" + entityClass + "], id = [" + id + "]");
         try {
             Key key = KeyFactory.createKey(entityClass.getSimpleName(), stringify(id));
             Entity gaeEntity = datastore.get(key);
@@ -290,9 +297,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         //return null;
     }
 
-    /*
-     * Delete operations
-     */
+    /*---------------------------------------------------------------------------------*/
+    /*----------------------------- DELETE OPERATIONS ----------------------------------*/
 
     /**
      * This is called by Kundera when a remove method is invoked on entity manager.
@@ -313,9 +319,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         throw new NotImplementedException();
     }
 
-    /*
-     * Get operation
-     */
+    /*---------------------------------------------------------------------------------*/
+    /*------------------------------ GET OPERATIONS ----------------------------------*/
 
     @Override
     public <E> List<E> getColumnsById(String schemaName, String tableName, String pKeyColumnName, String columnName, Object pKeyColumnValue, Class columnJavaType) {
@@ -323,20 +328,5 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         // TODO Auto-generated method stub
         throw new NotImplementedException();
         // return null;
-    }
-
-    private void setBatchSize(String persistenceUnit, Map<String, Object> puProperties) {
-        String batch_Size = null;
-        if (puProperties != null) {
-            batch_Size = puProperties != null ? (String) puProperties.get(PersistenceProperties.KUNDERA_BATCH_SIZE)
-                    : null;
-            if (batch_Size != null) {
-                setBatchSize(Integer.valueOf(batch_Size));
-            }
-        } else if (batch_Size == null) {
-            PersistenceUnitMetadata puMetadata = KunderaMetadataManager.getPersistenceUnitMetadata(kunderaMetadata,
-                    persistenceUnit);
-            setBatchSize(puMetadata.getBatchSize());
-        }
     }
 }

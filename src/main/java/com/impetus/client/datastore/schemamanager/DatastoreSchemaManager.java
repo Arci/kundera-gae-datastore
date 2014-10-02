@@ -17,8 +17,8 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
      * Initialise with configured client factory.
      *
      * @param clientFactory      specific client factory.
-     * @param externalProperties
-     * @param kunderaMetadata
+     * @param externalProperties external properties
+     * @param kunderaMetadata    kundera metadata
      */
     public DatastoreSchemaManager(String clientFactory, Map<String, Object> externalProperties, EntityManagerFactoryImpl.KunderaMetadata kunderaMetadata) {
         super(clientFactory, externalProperties, kunderaMetadata);
