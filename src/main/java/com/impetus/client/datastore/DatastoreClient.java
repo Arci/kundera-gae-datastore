@@ -208,6 +208,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
     @Override
     public void persistJoinTable(JoinTableData joinTableData) {
+        System.out.println("DatastoreClient.persistJoinTable");
+        System.out.println("joinTableData = [" + joinTableData + "]");
         // TODO Auto-generated method stub
         throw new NotImplementedException();
     }
@@ -262,6 +264,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     @Override
     public <E> List<E> findAll(Class<E> entityClass, String[] columnsToSelect, Object... keys) {
         System.out.println("DatastoreClient.findAll");
+        System.out.println("entityClass = [" + entityClass + "], columnsToSelect = [" + columnsToSelect + "], keys = [" + keys + "]");
         List results = new ArrayList();
         for (Object key : keys) {
             Object object = this.find(entityClass, key);
@@ -276,6 +279,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     @Override
     public <E> List<E> find(Class<E> entityClass, Map<String, String> embeddedColumnMap) {
         System.out.println("DatastoreClient.find");
+        System.out.println("entityClass = [" + entityClass + "], embeddedColumnMap = [" + embeddedColumnMap + "]");
         // TODO Auto-generated method stub
         throw new NotImplementedException();
         // return null;
@@ -284,6 +288,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     @Override
     public Object[] findIdsByColumn(String schemaName, String tableName, String pKeyName, String columnName, Object columnValue, Class entityClazz) {
         System.out.println("DatastoreClient.findIdsByColumn");
+        System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], pKeyName = [" + pKeyName + "], columnName = [" + columnName + "], columnValue = [" + columnValue + "], entityClazz = [" + entityClazz + "]");
         // TODO Auto-generated method stub
         throw new NotImplementedException();
         // return null;
@@ -292,6 +297,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     @Override
     public List<Object> findByRelation(String colName, Object colValue, Class entityClazz) {
         System.out.println("DatastoreClient.findByRelation");
+        System.out.println("colName = [" + colName + "], colValue = [" + colValue + "], entityClazz = [" + entityClazz + "]");
         // TODO Auto-generated method stub
         throw new NotImplementedException();
         //return null;
@@ -300,21 +306,18 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     /*---------------------------------------------------------------------------------*/
     /*----------------------------- DELETE OPERATIONS ----------------------------------*/
 
-    /**
-     * This is called by Kundera when a remove method is invoked on entity manager.
-     * This is responsible for removing entity object from underlying database.
-     */
     @Override
     public void delete(Object entity, Object pKey) {
         System.out.println("DatastoreClient.delete");
-        // TODO Auto-generated method stub
-        // Find all then find the one with .getKey().equals(pkey) sounds like inefficiency
-        throw new NotImplementedException();
+        System.out.println("entity = [" + entity + "], pKey = [" + pKey + "]");
+        Key key = KeyFactory.createKey(entity.getClass().getSimpleName(), stringify(pKey));
+        datastore.delete(key);
     }
 
     @Override
     public void deleteByColumn(String schemaName, String tableName, String columnName, Object columnValue) {
         System.out.println("DatastoreClient.deleteByColumn");
+        System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], columnName = [" + columnName + "], columnValue = [" + columnValue + "]");
         // TODO Auto-generated method stub
         throw new NotImplementedException();
     }
@@ -325,6 +328,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     @Override
     public <E> List<E> getColumnsById(String schemaName, String tableName, String pKeyColumnName, String columnName, Object pKeyColumnValue, Class columnJavaType) {
         System.out.println("DatastoreClient.getColumnsById");
+        System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], pKeyColumnName = [" + pKeyColumnName + "], columnName = [" + columnName + "], pKeyColumnValue = [" + pKeyColumnValue + "], columnJavaType = [" + columnJavaType + "]");
         // TODO Auto-generated method stub
         throw new NotImplementedException();
         // return null;
