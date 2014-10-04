@@ -2,6 +2,7 @@ package com.impetus.client.datastore;
 
 import com.google.appengine.api.datastore.*;
 import com.impetus.client.datastore.query.DatastoreQuery;
+import com.impetus.kundera.KunderaException;
 import com.impetus.kundera.PersistenceProperties;
 import com.impetus.kundera.client.Client;
 import com.impetus.kundera.client.ClientBase;
@@ -10,10 +11,7 @@ import com.impetus.kundera.db.RelationHolder;
 import com.impetus.kundera.generator.AutoGenerator;
 import com.impetus.kundera.index.IndexManager;
 import com.impetus.kundera.metadata.KunderaMetadataManager;
-import com.impetus.kundera.metadata.model.ClientMetadata;
-import com.impetus.kundera.metadata.model.EntityMetadata;
-import com.impetus.kundera.metadata.model.MetamodelImpl;
-import com.impetus.kundera.metadata.model.PersistenceUnitMetadata;
+import com.impetus.kundera.metadata.model.*;
 import com.impetus.kundera.metadata.model.attributes.AbstractAttribute;
 import com.impetus.kundera.metadata.model.type.AbstractManagedType;
 import com.impetus.kundera.persistence.EntityManagerFactoryImpl.KunderaMetadata;
@@ -21,7 +19,6 @@ import com.impetus.kundera.persistence.EntityReader;
 import com.impetus.kundera.persistence.context.jointable.JoinTableData;
 import com.impetus.kundera.property.PropertyAccessorHelper;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,7 +99,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         Entity gaeEntity = new Entity(entityType.getName(), stringify(id));
 
         handleAttributes(gaeEntity, entity, metamodel, entityMetadata, entityType.getAttributes());
-        handleRelations(gaeEntity, rlHolders);
+        handleRelations(gaeEntity, entityMetadata, rlHolders);
         handleDiscriminatorColumn(gaeEntity, entityType);
 
         datastore.put(gaeEntity);
@@ -157,42 +154,24 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         }
     }
 
-    private void handleRelations(Entity gaeEntity, List<RelationHolder> rlHolders) {
+    private void handleRelations(Entity gaeEntity, EntityMetadata entityMetadata, List<RelationHolder> rlHolders) {
         if (rlHolders != null && !rlHolders.isEmpty()) {
             for (RelationHolder rh : rlHolders) {
-                String relationName = rh.getRelationName();
-                // TODO maybe need a key or something like parent, not valueObj (which is the referenced id)
-                Object valueObj = rh.getRelationValue();
 
-                System.out.println("\nRelationValue:[ \n\t " + valueObj + "\n]\n");
+                Relation relation = entityMetadata.getRelation(rh.getRelationName());
 
-                System.out.println("\nRelationVia:[ \n\t " + rh.getRelationVia() + "\n]\n");
+                System.out.println("\nRelation:[ \n\t"
+                        + relation.getJoinColumnName(kunderaMetadata) + "\n\t"
+                        + relation.getTargetEntity() + "\n]");
 
-                // TODO decide
-                // to retrieve the related object need to know
-                // the kind anf the id, maybe save as relation value
-                // kind.id so can be splitted by "."
-                //
+                System.out.println("\nRelationHolder:[ \n\t"
+                        + rh.getRelationName() + "\n\t"
+                        + rh.getRelationValue() + "\n]\n");
 
-                // il problema è avere il kind, posso recuperarlo da Key.getKind()
-                // ma bisognerebbe riuscire a usare le key come id nelle entity
-                // come fa l'implementazione della jpa di google
-
-                // try {
-                //     String kind = rh.getRelationValue().toString().split(".")[0];
-                //     String embeddedId = rh.getRelationValue().toString().split(".")[1];
-                //     Key key = KeyFactory.createKey(kind, embeddedId);
-                //     Entity entity = datastore.get(key);
-                //     EmbeddedEntity embeddedEntity = new EmbeddedEntity();
-                //     embeddedEntity.setPropertiesFrom(entity);
-                //     gaeEntity.setProperty(relationName, embeddedEntity);
-                // } catch (EntityNotFoundException e) {
-                //     e.printStackTrace();
-                // }
-
-                if (!StringUtils.isEmpty(relationName) && valueObj != null) {
-                    gaeEntity.setProperty(relationName, valueObj);
-                }
+                String targetClass = relation.getTargetEntity().getSimpleName();
+                String targetId = (String) rh.getRelationValue();
+                Key targetKey = KeyFactory.createKey(targetClass, targetId);
+                gaeEntity.setProperty(rh.getRelationName(), targetKey);
             }
         }
     }
@@ -234,31 +213,56 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
             return null;
         } catch (InstantiationException e) {
             e.printStackTrace();
+            throw new KunderaException();
         } catch (IllegalAccessException e) {
             e.printStackTrace();
+            throw new KunderaException();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+            throw new KunderaException();
         }
-        return null;
     }
 
-    private Object initializeEntity(Entity gaeEntity, Class entityClass) throws IllegalAccessException, InstantiationException {
+    private Object initializeEntity(Entity gaeEntity, Class entityClass) throws IllegalAccessException, InstantiationException, ClassNotFoundException {
         EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entityClass);
         String idColumnName = ((AbstractAttribute) entityMetadata.getIdAttribute()).getJPAColumnName();
 
         // use reflection to instantiate the entity class
         Object entity = entityMetadata.getEntityClazz().newInstance();
         // use reflection to set entity fields
+        Map<String, Class> relMap = getRelationsMap(entityMetadata);
         for (Field field : entityClass.getDeclaredFields()) {
             if (field.getName().equals(idColumnName)) {
-                field.setAccessible(true);
-                field.set(entity, gaeEntity.getKey().getName());
+                setFiled(field, entity, getId(gaeEntity));
+            } else if (relMap.keySet().contains(field.getName())) {
+                System.out.println("Fill relation: " + field.getName());
+                Key relKey = (Key) gaeEntity.getProperties().get(field.getName());
+                Object enhanceEntity = find(relMap.get(field.getName()), relKey.getName());
+                setFiled(field, entity, ((EnhanceEntity) enhanceEntity).getEntity());
             } else if (gaeEntity.getProperties().containsKey(field.getName())) {
                 Object fieldValue = gaeEntity.getProperties().get(field.getName());
-                field.setAccessible(true);
-                field.set(entity, fieldValue);
+                setFiled(field, entity, fieldValue);
             }
         }
 
-        return new EnhanceEntity(entity, gaeEntity.getKey().getName(), null);
+        return new EnhanceEntity(entity, getId(gaeEntity), null);
+    }
+
+    private Map<String, Class> getRelationsMap(EntityMetadata entityMetadata) {
+        Map<String, Class> relMap = new HashMap<String, Class>();
+        for (Relation relation : entityMetadata.getRelations()) {
+            relMap.put(relation.getProperty().getName(), relation.getTargetEntity());
+        }
+        return relMap;
+    }
+
+    private void setFiled(Field field, Object entity, Object value) throws IllegalAccessException {
+        field.setAccessible(true);
+        field.set(entity, value);
+    }
+
+    private String getId(Entity gaeEntity) {
+        return gaeEntity.getKey().getName();
     }
 
     @Override
