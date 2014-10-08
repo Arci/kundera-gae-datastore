@@ -96,18 +96,13 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 entityMetadata.getPersistenceUnit());
         EntityType entityType = metamodel.entity(entityMetadata.getEntityClazz());
 
-        Entity gaeEntity = new Entity(entityType.getName(), stringify(id));
+        Entity gaeEntity = new Entity(entityType.getName(), (String) id);
 
         handleAttributes(gaeEntity, entity, metamodel, entityMetadata, entityType.getAttributes());
         handleRelations(gaeEntity, entityMetadata, rlHolders);
         handleDiscriminatorColumn(gaeEntity, entityType);
 
         datastore.put(gaeEntity);
-    }
-
-    private String stringify(Object id) {
-        // datastore ids can be Long or String
-        return (String) id;
     }
 
     @Override
@@ -122,7 +117,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
          * Key key = keyRange.getStart();
          *
          */
-        return UUID.randomUUID();
+        return UUID.randomUUID().toString();
     }
 
     private void handleAttributes(Entity gaeEntity, Object entity, MetamodelImpl metamodel, EntityMetadata metadata, Set<Attribute> attributes) {
@@ -141,10 +136,6 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         }
     }
 
-    private void processEmbeddableAttribute(Entity gaeEntity, Object entity, Attribute attribute, MetamodelImpl metamodel, EntityMetadata metadata) {
-        // TODO Auto-generated method stub
-    }
-
     private void processAttribute(Entity gaeEntity, Object entity, Attribute attribute) {
         Field field = (Field) attribute.getJavaMember();
         Object valueObj = PropertyAccessorHelper.getObject(entity, field);
@@ -154,6 +145,11 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         }
     }
 
+    private void processEmbeddableAttribute(Entity gaeEntity, Object entity, Attribute attribute, MetamodelImpl metamodel, EntityMetadata metadata) {
+        // TODO Auto-generated method stub
+        throw new NotImplementedException();
+    }
+
     private void handleRelations(Entity gaeEntity, EntityMetadata entityMetadata, List<RelationHolder> rlHolders) {
         if (rlHolders != null && !rlHolders.isEmpty()) {
             for (RelationHolder rh : rlHolders) {
@@ -161,13 +157,18 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 Relation relation = entityMetadata.getRelation(rh.getRelationName());
 
                 System.out.println("\nRelation:[ \n\t"
-                        + relation.getJoinColumnName(kunderaMetadata) + "\n\t"
-                        + relation.getTargetEntity() + "\n]");
+                        + "relationType: " + relation.getType() + "\n\t"
+                        + "mappedBy: " + relation.getMappedBy() + "\n\t"
+                        + "joinTableMetadata: " + relation.getJoinTableMetadata() + "\n\t"
+                        + "joinColumnName: " + relation.getJoinColumnName(kunderaMetadata) + "\n\t"
+                        + "targetEntity: " + relation.getTargetEntity().getCanonicalName() + "\n]");
 
-                System.out.println("\nRelationHolder:[ \n\t"
-                        + rh.getRelationName() + "\n\t"
-                        + rh.getRelationValue() + "\n]\n");
+                System.out.println("RelationHolder:[ \n\t"
+                        + "relationName: " + rh.getRelationName() + "\n\t"
+                        + "relationVia: " + rh.getRelationVia() + "\n\t"
+                        + "relationValue: " + rh.getRelationValue() + "\n]\n");
 
+                // TODO if fully classified class name use .getCanonicalName()
                 String targetClass = relation.getTargetEntity().getSimpleName();
                 String targetId = (String) rh.getRelationValue();
                 Key targetKey = KeyFactory.createKey(targetClass, targetId);
@@ -205,12 +206,11 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("DatastoreClient.find");
         System.out.println("entityClass = [" + entityClass + "], id = [" + id + "]");
         try {
-            Key key = KeyFactory.createKey(entityClass.getSimpleName(), stringify(id));
-            Entity gaeEntity = datastore.get(key);
+            Entity gaeEntity = get(entityClass, id);
+            System.out.println("gaeEntity:[ \n\t"
+                    + "kind: " + gaeEntity.getKind() + "\n\t"
+                    + "name: " + gaeEntity.getKey().getName() + "\n]\n");
             return initializeEntity(gaeEntity, entityClass);
-        } catch (EntityNotFoundException e) {
-            // No entity found
-            return null;
         } catch (InstantiationException e) {
             e.printStackTrace();
             throw new KunderaException();
@@ -223,46 +223,62 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         }
     }
 
+    private Entity get(Class clazz, Object id) {
+        System.out.println("DatastoreClient.get");
+        System.out.println("clazz = [" + clazz + "], id = [" + id + "]");
+        try {
+            // TODO if fully classified class name use .getCanonicalName()
+            Key key = KeyFactory.createKey(clazz.getSimpleName(), (String) id);
+            return datastore.get(key);
+        } catch (EntityNotFoundException e) {
+            return null;
+        }
+    }
+
     private Object initializeEntity(Entity gaeEntity, Class entityClass) throws IllegalAccessException, InstantiationException, ClassNotFoundException {
+        System.out.println("DatastoreClient.initializeEntity");
         EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entityClass);
         String idColumnName = ((AbstractAttribute) entityMetadata.getIdAttribute()).getJPAColumnName();
-
+        String entityId = gaeEntity.getKey().getName();
         // use reflection to instantiate the entity class
         Object entity = entityMetadata.getEntityClazz().newInstance();
         // use reflection to set entity fields
-        Map<String, Class> relMap = getRelationsMap(entityMetadata);
+        Map<String, Object> relationMap = new HashMap<String, Object>();
         for (Field field : entityClass.getDeclaredFields()) {
             if (field.getName().equals(idColumnName)) {
-                setFiled(field, entity, getId(gaeEntity));
-            } else if (relMap.keySet().contains(field.getName())) {
+                // id
+                System.out.println("Fill id: " + field.getName());
+                setFiled(field, entity, entityId);
+            } else if (entityMetadata.getRelation(field.getName()) != null) {
+                // relations
+                Relation relation = entityMetadata.getRelation(field.getName());
                 System.out.println("Fill relation: " + field.getName());
+                System.out.println("Relation:[ \n\t"
+                        + "relationType: " + relation.getType() + "\n\t"
+                        + "mappedBy: " + relation.getMappedBy() + "\n\t"
+                        + "joinTableMetadata: " + relation.getJoinTableMetadata() + "\n\t"
+                        + "joinColumnName: " + relation.getJoinColumnName(kunderaMetadata) + "\n\t"
+                        + "targetEntity: " + relation.getTargetEntity().getCanonicalName() + "\n]");
                 Key relKey = (Key) gaeEntity.getProperties().get(field.getName());
-                Object enhanceEntity = find(relMap.get(field.getName()), relKey.getName());
-                setFiled(field, entity, ((EnhanceEntity) enhanceEntity).getEntity());
+                System.out.println("Key:[ \n\t"
+                        + "kind: " + relKey.getKind() + "\n\t"
+                        + "name: " + relKey.getName() + "\n]");
+                relationMap.put(field.getName(), relKey.getName());
             } else if (gaeEntity.getProperties().containsKey(field.getName())) {
+                //other fields
+                System.out.println("Fill field: " + field.getName());
                 Object fieldValue = gaeEntity.getProperties().get(field.getName());
                 setFiled(field, entity, fieldValue);
             }
         }
+        System.out.println();
 
-        return new EnhanceEntity(entity, getId(gaeEntity), null);
-    }
-
-    private Map<String, Class> getRelationsMap(EntityMetadata entityMetadata) {
-        Map<String, Class> relMap = new HashMap<String, Class>();
-        for (Relation relation : entityMetadata.getRelations()) {
-            relMap.put(relation.getProperty().getName(), relation.getTargetEntity());
-        }
-        return relMap;
+        return new EnhanceEntity(entity, entityId, relationMap.isEmpty() ? null : relationMap);
     }
 
     private void setFiled(Field field, Object entity, Object value) throws IllegalAccessException {
         field.setAccessible(true);
         field.set(entity, value);
-    }
-
-    private String getId(Entity gaeEntity) {
-        return gaeEntity.getKey().getName();
     }
 
     @Override
@@ -314,7 +330,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     public void delete(Object entity, Object pKey) {
         System.out.println("DatastoreClient.delete");
         System.out.println("entity = [" + entity + "], pKey = [" + pKey + "]");
-        Key key = KeyFactory.createKey(entity.getClass().getSimpleName(), stringify(pKey));
+        Key key = KeyFactory.createKey(entity.getClass().getSimpleName(), (String) pKey);
         datastore.delete(key);
     }
 
