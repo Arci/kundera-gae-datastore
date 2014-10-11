@@ -249,7 +249,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 initializeRelation(gaeEntity, entity, attribute, entityMetadata, relationMap);
             }
         }
-        System.out.println("\n" + entity + "\n\n");
+        System.out.println(entity + "\n\n");
 
         return new EnhanceEntity(entity, gaeEntity.getKey().getName(), relationMap.isEmpty() ? null : relationMap);
     }
