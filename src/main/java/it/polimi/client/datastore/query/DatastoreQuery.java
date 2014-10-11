@@ -1,6 +1,6 @@
-package com.impetus.client.datastore.query;
+package it.polimi.client.datastore.query;
 
-import com.impetus.client.datastore.DatastoreEntityReader;
+import it.polimi.client.datastore.DatastoreEntityReader;
 import com.impetus.kundera.client.Client;
 import com.impetus.kundera.metadata.model.EntityMetadata;
 import com.impetus.kundera.persistence.EntityManagerFactoryImpl;
@@ -41,6 +41,7 @@ public class DatastoreQuery extends QueryImpl {
     @Override
     protected List<Object> populateEntities(EntityMetadata m, Client client) {
         System.out.println("DatastoreQuery.populateEntities");
+        System.out.println("m = [" + m + "], client = [" + client + "]");
         // TODO Auto-generated method stub
         throw new NotImplementedException();
         // return null;
@@ -52,6 +53,7 @@ public class DatastoreQuery extends QueryImpl {
     @Override
     protected List<Object> recursivelyPopulateEntities(EntityMetadata m, Client client) {
         System.out.println("DatastoreQuery.recursivelyPopulateEntities");
+        System.out.println("m = [" + m + "], client = [" + client + "]");
         // TODO Auto-generated method stub
         throw new NotImplementedException();
         // return null;
@@ -78,7 +80,7 @@ public class DatastoreQuery extends QueryImpl {
     @Override
     public void close() {
         System.out.println("DatastoreQuery.close");
-        // TODO seems no one use this
+        /* do nothing, nothing to close */
     }
 
     @Override

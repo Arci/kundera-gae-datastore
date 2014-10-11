@@ -1,4 +1,4 @@
-package com.impetus.client.datastore.config;
+package it.polimi.client.datastore.config;
 
 import com.impetus.kundera.configure.AbstractPropertyReader;
 import com.impetus.kundera.configure.ClientProperties;

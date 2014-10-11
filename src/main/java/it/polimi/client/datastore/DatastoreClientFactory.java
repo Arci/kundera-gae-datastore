@@ -1,9 +1,9 @@
-package com.impetus.client.datastore;
+package it.polimi.client.datastore;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
-import com.impetus.client.datastore.config.DatastorePropertyReader;
-import com.impetus.client.datastore.schemamanager.DatastoreSchemaManager;
+import it.polimi.client.datastore.config.DatastorePropertyReader;
+import it.polimi.client.datastore.schemamanager.DatastoreSchemaManager;
 import com.impetus.kundera.client.Client;
 import com.impetus.kundera.configure.schema.api.SchemaManager;
 import com.impetus.kundera.loader.GenericClientFactory;
@@ -27,7 +27,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
     @Override
     public void initialize(Map<String, Object> puProperties) {
         reader = new DatastoreEntityReader(kunderaMetadata);
-        initializePropertyReader();
+        initializePropertyReader(); // TODO this is needed? maybe not, is related to external properties?
         setExternalProperties(puProperties);
     }
 
@@ -44,6 +44,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
         // String keyspace = null;
         // String poolSize = null;
         // if(externalProperties != null) {
+        //     /* keyspace is property "kundera.keyspace" in persistence */
         //     keyspace = (String) externalProperties.get(PersistenceProperties.KUNDERA_KEYSPACE);
         //     poolSize = (String) externalProperties.get(PersistenceProperties.KUNDERA_POOL_SIZE_MAX_ACTIVE);
         // }

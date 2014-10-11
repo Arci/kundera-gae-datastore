@@ -1,4 +1,4 @@
-package com.impetus.client.datastore;
+package it.polimi.client.datastore;
 
 import com.impetus.kundera.client.Client;
 import com.impetus.kundera.client.EnhanceEntity;

@@ -1,4 +1,4 @@
-package com.impetus.client.datastore.schemamanager;
+package it.polimi.client.datastore.schemamanager;
 
 import com.impetus.kundera.configure.schema.TableInfo;
 import com.impetus.kundera.configure.schema.api.AbstractSchemaManager;

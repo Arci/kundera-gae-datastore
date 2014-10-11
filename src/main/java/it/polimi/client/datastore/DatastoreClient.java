@@ -1,7 +1,7 @@
-package com.impetus.client.datastore;
+package it.polimi.client.datastore;
 
 import com.google.appengine.api.datastore.*;
-import com.impetus.client.datastore.query.DatastoreQuery;
+import it.polimi.client.datastore.query.DatastoreQuery;
 import com.impetus.kundera.KunderaException;
 import com.impetus.kundera.PersistenceProperties;
 import com.impetus.kundera.client.Client;
@@ -37,6 +37,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     private EntityReader reader;
     private DatastoreService datastore;
     private int batchSize;
+
+    private Map<Key, Class> oneToManyPrefetch = new HashMap<Key, Class>();
 
     protected DatastoreClient(final KunderaMetadata kunderaMetadata, Map<String, Object> properties,
                               String persistenceUnit, final ClientMetadata clientMetadata, IndexManager indexManager,
@@ -159,10 +161,20 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 System.out.println("\nRelation:[ \n\t"
                         + "relationType: " + relation.getType() + "\n\t"
                         + "mappedBy: " + relation.getMappedBy() + "\n\t"
+                        + "biDirectionalField: " + relation.getBiDirectionalField() + "\n\t"
+                        + "cascade: " + relation.getCascades() + "\n\t"
+                        + "fetchType: " + relation.getFetchType() + "\n\t"
+                        + "mapKeyJoinClass: " + relation.getMapKeyJoinClass() + "\n\t"
+                        + "property: " + relation.getProperty() + "\n\t"
+                        + "propertyType: " + relation.getPropertyType() + "\n\t"
+                        + "isBiDirectional: " + relation.isBiDirectional() + "\n\t"
+                        + "isCollection: " + relation.isCollection() + "\n\t"
+                        + "isOptional: " + relation.isOptional() + "\n\t"
+                        + "isRelatedViaJoinTable: " + relation.isRelatedViaJoinTable() + "\n\t"
+                        + "isUnary: " + relation.isUnary() + "\n\t"
                         + "joinTableMetadata: " + relation.getJoinTableMetadata() + "\n\t"
                         + "joinColumnName: " + relation.getJoinColumnName(kunderaMetadata) + "\n\t"
                         + "targetEntity: " + relation.getTargetEntity().getCanonicalName() + "\n]");
-
                 System.out.println("RelationHolder:[ \n\t"
                         + "relationName: " + rh.getRelationName() + "\n\t"
                         + "relationVia: " + rh.getRelationVia() + "\n\t"
@@ -253,17 +265,51 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 // relations
                 Relation relation = entityMetadata.getRelation(field.getName());
                 System.out.println("Fill relation: " + field.getName());
-                System.out.println("Relation:[ \n\t"
-                        + "relationType: " + relation.getType() + "\n\t"
-                        + "mappedBy: " + relation.getMappedBy() + "\n\t"
-                        + "joinTableMetadata: " + relation.getJoinTableMetadata() + "\n\t"
-                        + "joinColumnName: " + relation.getJoinColumnName(kunderaMetadata) + "\n\t"
-                        + "targetEntity: " + relation.getTargetEntity().getCanonicalName() + "\n]");
+                System.out.println("\tRelation:[ \n\t\t"
+                        + "relationType: " + relation.getType() + "\n\t\t"
+                        + "mappedBy: " + relation.getMappedBy() + "\n\t\t"
+                        + "joinTableMetadata: " + relation.getJoinTableMetadata() + "\n\t\t"
+                        + "joinColumnName: " + relation.getJoinColumnName(kunderaMetadata) + "\n\t\t"
+                        + "targetEntity: " + relation.getTargetEntity().getCanonicalName() + "\n\t]");
                 Key relKey = (Key) gaeEntity.getProperties().get(field.getName());
-                System.out.println("Key:[ \n\t"
-                        + "kind: " + relKey.getKind() + "\n\t"
-                        + "name: " + relKey.getName() + "\n]");
-                relationMap.put(field.getName(), relKey.getName());
+                if (relKey != null) {
+                    System.out.println("\tKey:[ \n\t\t"
+                            + "kind: " + relKey.getKind() + "\n\t\t"
+                            + "name: " + relKey.getName() + "\n\t]");
+                    relationMap.put(field.getName(), relKey.getName());
+                } else {
+                    System.out.println("\tNo rel key, inverse relation?");
+
+                    String targetClass = relation.getTargetEntity().getSimpleName();
+                    System.out.println("\ttargetClass = " + targetClass);
+                    String targetField = relation.getMappedBy();
+                    System.out.println("\ttargetField = " + targetField);
+                    Key key = gaeEntity.getKey();
+                    System.out.println("\tsubjectKey = " + key);
+                    Query q = new Query(targetClass)
+                            .setFilter(new Query.FilterPredicate(targetField,
+                                    Query.FilterOperator.EQUAL,
+                                    key)).setKeysOnly();
+                    List<Entity> results = datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
+                    if (relation.getType().equals(Relation.ForeignKey.ONE_TO_ONE)) {
+                        System.out.println("\tONE TO ONE -> results");
+                        System.out.println("\tresults.isEmpty()? " + results.isEmpty());
+                        System.out.println("\tresultKey:[ \n\t\t"
+                                + "kind: " + results.get(0).getKey().getKind() + "\n\t\t"
+                                + "name: " + results.get(0).getKey().getName() + "\n\t]");
+
+                        relationMap.put(field.getName(), results.get(0).getKey().getName());
+                    } else if (relation.getType().equals(Relation.ForeignKey.ONE_TO_MANY)) {
+                        System.out.println("\tONE TO MANY");
+                        for (Entity e : results) {
+                            oneToManyPrefetch.put(e.getKey(), relation.getTargetEntity());
+                            System.out.println("\tresultKey:[ \n\t\t"
+                                    + "kind: " + e.getKey().getKind() + "\n\t\t"
+                                    + "name: " + e.getKey().getName() + "\n\t]");
+                        }
+                        System.out.println("\toneToManyPrefetch.isEmpty()? " + oneToManyPrefetch.isEmpty());
+                    }
+                }
             } else if (gaeEntity.getProperties().containsKey(field.getName())) {
                 //other fields
                 System.out.println("Fill field: " + field.getName());
@@ -309,7 +355,6 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     public Object[] findIdsByColumn(String schemaName, String tableName, String pKeyName, String columnName, Object columnValue, Class entityClazz) {
         System.out.println("DatastoreClient.findIdsByColumn");
         System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], pKeyName = [" + pKeyName + "], columnName = [" + columnName + "], columnValue = [" + columnValue + "], entityClazz = [" + entityClazz + "]");
-        // TODO Auto-generated method stub
         throw new NotImplementedException();
         // return null;
     }
@@ -318,9 +363,57 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     public List<Object> findByRelation(String colName, Object colValue, Class entityClazz) {
         System.out.println("DatastoreClient.findByRelation");
         System.out.println("colName = [" + colName + "], colValue = [" + colValue + "], entityClazz = [" + entityClazz + "]");
-        // TODO Auto-generated method stub
-        throw new NotImplementedException();
-        //return null;
+
+        EntityMetadata metadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entityClazz);
+        Entity entity = null;
+        Class targetClass = null;
+        String targetField = null;
+        for (Relation relation : metadata.getRelations()) {
+            targetClass =  relation.getTargetEntity();
+            targetField = relation.getProperty().getName();
+            entity = get(targetClass, colValue);
+            if (entity != null) {
+                System.out.println("id [" + colValue + "] is of [" + entity.getKind() + "]");
+                break;
+            }
+        }
+        if(entity != null) {
+            System.out.println(targetField);
+            Query q = new Query(entityClazz.getSimpleName())
+                    .setFilter(new Query.FilterPredicate(targetField,
+                            Query.FilterOperator.EQUAL,
+                            entity.getKey()));
+            System.out.println(q);
+            List<Entity> gaeResults = datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
+            System.out.println("Query done");
+            List<Object> results = new ArrayList<Object>();
+            for (Entity e : gaeResults) {
+                System.out.println("result: " + e);
+                try {
+                    results.add(initializeEntity(e, entityClazz));
+                } catch (IllegalAccessException e1) {
+                    e1.printStackTrace();
+                } catch (InstantiationException e1) {
+                    e1.printStackTrace();
+                } catch (ClassNotFoundException e1) {
+                    e1.printStackTrace();
+                }
+            }
+            return results;
+        }
+        return null;
+
+//        if (!oneToManyPrefetch.isEmpty()) {
+//            List<Object> results = new ArrayList<Object>();
+//            for (Key key : oneToManyPrefetch.keySet()) {
+//                Class targetClass = oneToManyPrefetch.get(key);
+//                results.add(find(targetClass, key.getName()));
+//            }
+//            return results;
+//        } else {
+//            System.out.println("oneToManyPrefetch is empty");
+//            return null;
+//        }
     }
 
     /*---------------------------------------------------------------------------------*/
