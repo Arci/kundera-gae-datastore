@@ -11,6 +11,7 @@
         <class>it.polimi.datastore.test.model.EmployeeEmbedded</class>
         <class>it.polimi.datastore.test.model.EmployeeMTM</class>
         <class>it.polimi.datastore.test.model.EmployeeMTO</class>
+        <class>it.polimi.datastore.test.model.EmployeeMTObis</class>
         <class>it.polimi.datastore.test.model.EmployeeOTO</class>
         <class>it.polimi.datastore.test.model.Phone</class>
         <class>it.polimi.datastore.test.model.PhoneEnum</class>

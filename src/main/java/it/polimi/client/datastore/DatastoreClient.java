@@ -318,9 +318,17 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("DatastoreClient.findByRelation");
         System.out.println("colName = [" + colName + "], colValue = [" + colValue + "], entityClazz = [" + entityClazz + "]");
 
-        // TODO Auto-generated method stub
-        throw new NotImplementedException();
-        // return null; null;
+        Query q = new Query(entityClazz.getSimpleName())
+                .setFilter(new Query.FilterPredicate(colName,
+                        Query.FilterOperator.EQUAL,
+                        colValue)).setKeysOnly();
+        System.out.println("\n" + q + "\n");
+
+        List<Object> results = new ArrayList<Object>();
+        for (Entity entity : datastore.prepare(q).asList(FetchOptions.Builder.withDefaults())) {
+            results.add(find(entityClazz, entity.getKey().getName()));
+        }
+        return results;
     }
 
     /*---------------------------------------------------------------------------------*/
