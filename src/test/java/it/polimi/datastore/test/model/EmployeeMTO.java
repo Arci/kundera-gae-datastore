@@ -23,7 +23,7 @@ public class EmployeeMTO {
     private Long salary;
 
     /* many employees work in one department */
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "DEPARTMENT_ID")
     private Department department;
 }

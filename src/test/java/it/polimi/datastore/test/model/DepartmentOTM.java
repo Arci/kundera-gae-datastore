@@ -32,7 +32,4 @@ public class DepartmentOTM {
     @OneToMany(mappedBy = "department")
     private List<EmployeeMTObis> employees;
 
-    public void addEmployee(EmployeeMTObis employee) {
-        this.employees.add(employee);
-    }
 }

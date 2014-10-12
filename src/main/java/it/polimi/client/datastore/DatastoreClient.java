@@ -189,18 +189,40 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         }
     }
 
+    /*
+     * persist join table for ManyToMany
+     */
     @Override
     public void persistJoinTable(JoinTableData joinTableData) {
         System.out.println("DatastoreClient.persistJoinTable");
-        System.out.println("joinTableData = [" + joinTableData + "]");
 
-        // TODO Auto-generated method stub
-        throw new NotImplementedException();
+        String joinTableName = joinTableData.getJoinTableName();
+        String joinColumnName = joinTableData.getJoinColumnName();
+        String inverseJoinColumnName = joinTableData.getInverseJoinColumnName();
+        Map<Object, Set<Object>> joinTableRecords = joinTableData.getJoinTableRecords();
+
+        for (Object owner : joinTableRecords.keySet()) {
+            Set<Object> children = joinTableRecords.get(owner);
+
+            System.out.println("joinColumnName = [" + joinColumnName + "], value = [" + owner + "]");
+            for (Object child : children) {
+                System.out.println("inverseJoinColumnName = [" + inverseJoinColumnName + "], value = [" + child + "]");
+                Entity gaeEntity = new Entity(joinTableName);
+                gaeEntity.setProperty(joinColumnName, owner);
+                gaeEntity.setProperty(inverseJoinColumnName, child);
+                datastore.put(gaeEntity);
+            }
+            System.out.println();
+        }
+        System.out.println();
     }
 
     /*---------------------------------------------------------------------------------*/
     /*------------------------------ FIND OPERATIONS ----------------------------------*/
 
+    /*
+     * it's called to found detached entities
+     */
     @Override
     public Object find(Class entityClass, Object id) {
         System.out.println("DatastoreClient.find");
@@ -209,8 +231,13 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         try {
             EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entityClass);
             Entity gaeEntity = get(entityMetadata.getTableName(), id);
+            if(gaeEntity == null) {
+                // case not found
+                return null;
+            }
             System.out.println(gaeEntity);
             return initializeEntity(gaeEntity, entityClass);
+
         } catch (InstantiationException e) {
             e.printStackTrace();
             throw new KunderaException(e.getMessage());
@@ -228,7 +255,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
             Key key = KeyFactory.createKey(kind, (String) id);
             return datastore.get(key);
         } catch (EntityNotFoundException e) {
-            System.out.println("NOT FOUND: kind = [" + kind + "], id = [" + id + "]");
+            System.out.println("\tNot found {kind = [" + kind + "], id = [" + id + "]}");
             return null;
         }
     }
@@ -313,6 +340,10 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         // return null;
     }
 
+    /*
+     * used to retrieve relation for OneToMany
+     * (ManyToOne inverse relation)
+     */
     @Override
     public List<Object> findByRelation(String colName, Object colValue, Class entityClazz) {
         System.out.println("DatastoreClient.findByRelation");
@@ -331,6 +362,19 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         return results;
     }
 
+    /*
+     * used to retrieve relation for ManyToMany
+     */
+    @Override
+    public <E> List<E> getColumnsById(String schemaName, String tableName, String pKeyColumnName, String columnName, Object pKeyColumnValue, Class columnJavaType) {
+        System.out.println("DatastoreClient.getColumnsById");
+        System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], pKeyColumnName = [" + pKeyColumnName + "], columnName = [" + columnName + "], pKeyColumnValue = [" + pKeyColumnValue + "], columnJavaType = [" + columnJavaType + "]");
+
+        // TODO Auto-generated method stub
+        throw new NotImplementedException();
+        // return null;
+    }
+
     /*---------------------------------------------------------------------------------*/
     /*----------------------------- DELETE OPERATIONS ----------------------------------*/
 
@@ -342,6 +386,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entity.getClass());
         Key key = KeyFactory.createKey(entityMetadata.getTableName(), (String) pKey);
         datastore.delete(key);
+
+        System.out.println();
     }
 
     @Override
@@ -353,16 +399,4 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         throw new NotImplementedException();
     }
 
-    /*---------------------------------------------------------------------------------*/
-    /*------------------------------ GET OPERATIONS ----------------------------------*/
-
-    @Override
-    public <E> List<E> getColumnsById(String schemaName, String tableName, String pKeyColumnName, String columnName, Object pKeyColumnValue, Class columnJavaType) {
-        System.out.println("DatastoreClient.getColumnsById");
-        System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], pKeyColumnName = [" + pKeyColumnName + "], columnName = [" + columnName + "], pKeyColumnValue = [" + pKeyColumnValue + "], columnJavaType = [" + columnJavaType + "]");
-
-        // TODO Auto-generated method stub
-        throw new NotImplementedException();
-        // return null;
-    }
 }

@@ -22,7 +22,8 @@ public class EmployeeOTO {
     @Column(name = "SALARY")
     private Long salary;
 
-    @OneToOne
+    /* an employee have one and only one phone */
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "PHONE_ID")
     private Phone phone;
 }
