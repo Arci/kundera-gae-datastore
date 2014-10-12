@@ -1,9 +1,9 @@
 package it.polimi.datastore.test;
 
+import com.google.appengine.api.datastore.dev.LocalDatastoreService;
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
 import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
-import it.polimi.datastore.test.model.Employee;
-import it.polimi.datastore.test.model.Phone;
+import it.polimi.datastore.test.model.*;
 import junit.framework.Assert;
 import org.junit.After;
 import org.junit.Before;
@@ -12,15 +12,17 @@ import org.junit.Test;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
+import java.io.File;
 
 /**
  * @author Fabio Arcidiacono.
  */
 public class DatastorePersistTest {
 
+    private File dbContents = new File("datastore/testDB/WEB-INF/appengine-generated/local_db.bin");
     private LocalDatastoreServiceTestConfig datastoreConfig = new LocalDatastoreServiceTestConfig()
-            .setNoStorage(false)
-            .setBackingStoreLocation("datastore/testDB/WEB-INF/appengine-generated/local_db.bin");
+            .setBackingStoreLocation(dbContents.getAbsolutePath())
+            .setNoStorage(false);
     private final LocalServiceTestHelper helper = new LocalServiceTestHelper(datastoreConfig);
     private static final String PERSISTENCE_UNIT = "pu";
     private EntityManagerFactory emf;
@@ -29,15 +31,25 @@ public class DatastorePersistTest {
     @Before
     public void setUp() {
         helper.setUp();
+        LocalDatastoreService dsService = (LocalDatastoreService) LocalServiceTestHelper.getLocalService(LocalDatastoreService.PACKAGE);
+        dsService.setNoStorage(false);
         emf = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT);
         if (em != null && em.isOpen()) {
             em.close();
         }
         em = emf.createEntityManager();
+        System.out.println();
+    }
+
+    @After
+    public void tearDown() {
+        em.close();
+        emf.close();
+        helper.tearDown();
     }
 
     @Test
-    public void simplePerist() {
+    public void simplePersist() {
         Employee employee = new Employee();
         employee.setName("Fabio");
         employee.setSalary(123L);
@@ -65,40 +77,59 @@ public class DatastorePersistTest {
         Assert.assertTrue(retrievedPhone.getNumber().equals(123456789L));
     }
 
-//    @Test
-//    public void persistOTO() {
-//        EmployeeOTO employeeOTO = new EmployeeOTO();
-//        employeeOTO.setName("Fabio");
-//        employeeOTO.setSalary(123L);
-//        em.persist(employeeOTO);
-//
-//        Phone phone = new Phone();
-//        phone.setNumber(123456789L);
-//        em.persist(phone);
-//
-//        employeeOTO.setPhone(phone);
-//        em.flush();
-//
-//        Assert.assertTrue(employeeOTO.getPhone() != null);
-//        Assert.assertEquals(phone.getId(), employeeOTO.getPhone().getId());
-//        Assert.assertEquals(phone.getNumber(), employeeOTO.getPhone().getNumber());
-//
-//        String empID = employeeOTO.getId();
-//        em.clear();
-//        em.find(EmployeeOTO.class, empID);
-//
-//        Assert.assertEquals(employeeOTO.getName(), "Fabio");
-//        Assert.assertTrue(employeeOTO.getSalary().equals(123L));
-//        Assert.assertTrue(employeeOTO.getPhone() != null);
-//        Assert.assertEquals(phone.getId(), employeeOTO.getPhone().getId());
-//        Assert.assertEquals(phone.getNumber(), employeeOTO.getPhone().getNumber());
-//
-//    }
+    @Test
+    public void persistOTO() {
+        EmployeeOTO employeeOTO = new EmployeeOTO();
+        employeeOTO.setName("Fabio");
+        employeeOTO.setSalary(123L);
+        Phone phone = new Phone();
+        phone.setNumber(123456789L);
+        employeeOTO.setPhone(phone);
+        em.persist(phone);
+        em.persist(employeeOTO);
+        em.flush();
 
-    @After
-    public void tearDown() {
-        em.close();
-        emf.close();
-        helper.tearDown();
+        Assert.assertTrue(employeeOTO.getPhone() != null);
+        Assert.assertEquals(phone.getId(), employeeOTO.getPhone().getId());
+        Assert.assertEquals(phone.getNumber(), employeeOTO.getPhone().getNumber());
+
+        String empID = employeeOTO.getId();
+        em.clear();
+        EmployeeOTO retrieved = em.find(EmployeeOTO.class, empID);
+
+        Assert.assertEquals(retrieved.getName(), "Fabio");
+        Assert.assertTrue(retrieved.getSalary().equals(123L));
+        Assert.assertTrue(retrieved.getPhone() != null);
+        Assert.assertEquals(phone.getId(), retrieved.getPhone().getId());
+        Assert.assertEquals(phone.getNumber(), retrieved.getPhone().getNumber());
+
+    }
+
+    @Test
+    public void persistMTO() {
+        EmployeeMTO employeeMTO = new EmployeeMTO();
+        employeeMTO.setName("Fabio");
+        employeeMTO.setSalary(123L);
+        Department department = new Department();
+        department.setName("Computer Science");
+        employeeMTO.setDepartment(department);
+        em.persist(department);
+        em.persist(employeeMTO);
+        em.flush();
+
+        Assert.assertTrue(employeeMTO.getDepartment() != null);
+        Assert.assertEquals(department.getId(), employeeMTO.getDepartment().getId());
+        Assert.assertEquals(department.getName(), employeeMTO.getDepartment().getName());
+
+        String empID = employeeMTO.getId();
+        em.clear();
+        EmployeeMTO retrieved = em.find(EmployeeMTO.class, empID);
+
+        Assert.assertEquals(retrieved.getName(), "Fabio");
+        Assert.assertTrue(retrieved.getSalary().equals(123L));
+        Assert.assertTrue(retrieved.getDepartment() != null);
+        Assert.assertEquals(department.getId(), retrieved.getDepartment().getId());
+        Assert.assertEquals(department.getName(), retrieved.getDepartment().getName());
+
     }
 }

@@ -10,7 +10,10 @@ import com.impetus.kundera.db.RelationHolder;
 import com.impetus.kundera.generator.AutoGenerator;
 import com.impetus.kundera.index.IndexManager;
 import com.impetus.kundera.metadata.KunderaMetadataManager;
-import com.impetus.kundera.metadata.model.*;
+import com.impetus.kundera.metadata.model.ClientMetadata;
+import com.impetus.kundera.metadata.model.EntityMetadata;
+import com.impetus.kundera.metadata.model.MetamodelImpl;
+import com.impetus.kundera.metadata.model.PersistenceUnitMetadata;
 import com.impetus.kundera.metadata.model.attributes.AbstractAttribute;
 import com.impetus.kundera.metadata.model.type.AbstractManagedType;
 import com.impetus.kundera.persistence.EntityManagerFactoryImpl.KunderaMetadata;
@@ -115,10 +118,11 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         Entity gaeEntity = new Entity(entityMetadata.getTableName(), (String) id);
 
         handleAttributes(gaeEntity, entity, metamodel, entityMetadata, entityType.getAttributes());
-        handleRelations(gaeEntity, entityMetadata, rlHolders);
+        handleRelations(gaeEntity, entity, entityMetadata, rlHolders);
         /* discriminator column is used for JPA inheritance */
         handleDiscriminatorColumn(gaeEntity, entityType);
-        System.out.println();
+
+        System.out.println("\n" + gaeEntity + "\n");
 
         datastore.put(gaeEntity);
     }
@@ -142,9 +146,9 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     private void processAttribute(Entity gaeEntity, Object entity, Attribute attribute) {
         Field field = (Field) attribute.getJavaMember();
         Object valueObj = PropertyAccessorHelper.getObject(entity, field);
+        String jpaColumnName = ((AbstractAttribute) attribute).getJPAColumnName();
 
         if (valueObj != null) {
-            String jpaColumnName = ((AbstractAttribute) attribute).getJPAColumnName();
             System.out.println("field = [" + field.getName() + "], jpaColumnName = [" + jpaColumnName + "], valueObj = [" + valueObj + "]");
             gaeEntity.setProperty(jpaColumnName, valueObj);
         }
@@ -160,17 +164,16 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         // gaeEntity.setProperty("contactInfo", embeddedEntity);
     }
 
-    private void handleRelations(Entity gaeEntity, EntityMetadata entityMetadata, List<RelationHolder> rlHolders) {
+    private void handleRelations(Entity gaeEntity, Object entity, EntityMetadata entityMetadata, List<RelationHolder> rlHolders) {
         if (rlHolders != null && !rlHolders.isEmpty()) {
             for (RelationHolder rh : rlHolders) {
-                Relation relation = entityMetadata.getRelation(rh.getRelationName());
-                String targetClass = relation.getTargetEntity().getSimpleName();
+                String jpaColumnName = rh.getRelationName();
+                String fieldName = entityMetadata.getFieldName(jpaColumnName);
                 String targetId = (String) rh.getRelationValue();
 
-                if (targetClass != null && targetId != null) {
-                    System.out.println("targetClass = [" + targetClass + "], targetId = [" + targetId + "]");
-                    Key targetKey = KeyFactory.createKey(targetClass, targetId);
-                    gaeEntity.setProperty(rh.getRelationName(), targetKey);
+                if (jpaColumnName != null && targetId != null) {
+                    System.out.println("field = [" + fieldName + "], jpaColumnName = [" + jpaColumnName + "], targetId = [" + targetId + "]");
+                    gaeEntity.setProperty(jpaColumnName, targetId);
                 }
             }
         }
@@ -244,9 +247,9 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         Set<Attribute> attributes = entityType.getAttributes();
         for (Attribute attribute : attributes) {
             if (!attribute.isAssociation()) {
-                initializeAttribute(gaeEntity, entity, attribute, entityMetadata);
+                initializeAttribute(gaeEntity, entity, attribute);
             } else {
-                initializeRelation(gaeEntity, entity, attribute, entityMetadata, relationMap);
+                initializeRelation(gaeEntity, attribute, relationMap);
             }
         }
         System.out.println(entity + "\n\n");
@@ -254,19 +257,24 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         return new EnhanceEntity(entity, gaeEntity.getKey().getName(), relationMap.isEmpty() ? null : relationMap);
     }
 
-    private void initializeAttribute(Entity gaeEntity, Object entity, Attribute attribute, EntityMetadata entityMetadata) {
+    private void initializeAttribute(Entity gaeEntity, Object entity, Attribute attribute) {
         String jpaColumnName = ((AbstractAttribute) attribute).getJPAColumnName();
         Object fieldValue = gaeEntity.getProperties().get(jpaColumnName);
         System.out.println("jpaColumnName = [" + jpaColumnName + "], fieldValue = [" + fieldValue + "]");
+
         if (jpaColumnName != null && fieldValue != null) {
             PropertyAccessorHelper.set(entity, (Field) attribute.getJavaMember(), fieldValue);
         }
     }
 
-    private void initializeRelation(Entity gaeEntity, Object entity, Attribute attribute, EntityMetadata entityMetadata, Map<String, Object> relationMap) {
-        System.out.println("DatastoreClient.initializeRelation [" + attribute.getName() + "]");
+    private void initializeRelation(Entity gaeEntity, Attribute attribute, Map<String, Object> relationMap) {
+        String jpaColumnName = ((AbstractAttribute) attribute).getJPAColumnName();
+        Object fieldValue = gaeEntity.getProperties().get(jpaColumnName);
+        System.out.println("jpaColumnName = [" + jpaColumnName + "], fieldValue = [" + fieldValue + "]");
 
-        // TODO
+        if (jpaColumnName != null && fieldValue != null) {
+            relationMap.put(jpaColumnName, fieldValue);
+        }
     }
 
     @Override
