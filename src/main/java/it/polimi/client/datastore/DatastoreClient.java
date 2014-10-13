@@ -2,7 +2,6 @@ package it.polimi.client.datastore;
 
 import com.google.appengine.api.datastore.*;
 import com.impetus.kundera.KunderaException;
-import com.impetus.kundera.PersistenceProperties;
 import com.impetus.kundera.client.Client;
 import com.impetus.kundera.client.ClientBase;
 import com.impetus.kundera.client.EnhanceEntity;
@@ -13,7 +12,6 @@ import com.impetus.kundera.metadata.KunderaMetadataManager;
 import com.impetus.kundera.metadata.model.ClientMetadata;
 import com.impetus.kundera.metadata.model.EntityMetadata;
 import com.impetus.kundera.metadata.model.MetamodelImpl;
-import com.impetus.kundera.metadata.model.PersistenceUnitMetadata;
 import com.impetus.kundera.metadata.model.attributes.AbstractAttribute;
 import com.impetus.kundera.metadata.model.type.AbstractManagedType;
 import com.impetus.kundera.persistence.EntityManagerFactoryImpl.KunderaMetadata;
@@ -51,25 +49,6 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         this.datastore = datastore;
         this.indexManager = indexManager;
         this.clientMetadata = clientMetadata;
-        setBatchSize(persistenceUnit, this.externalProperties);
-    }
-
-    public void setBatchSize(int batchSize) {
-        this.batchSize = batchSize;
-    }
-
-    private void setBatchSize(String persistenceUnit, Map<String, Object> puProperties) {
-        String batch_Size;
-        if (puProperties != null) {
-            batch_Size = (String) puProperties.get(PersistenceProperties.KUNDERA_BATCH_SIZE);
-            if (batch_Size != null) {
-                setBatchSize(Integer.valueOf(batch_Size));
-            }
-        } else {
-            PersistenceUnitMetadata puMetadata = KunderaMetadataManager.getPersistenceUnitMetadata(kunderaMetadata,
-                    persistenceUnit);
-            setBatchSize(puMetadata.getBatchSize());
-        }
     }
 
     @Override
@@ -130,8 +109,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     private void handleAttributes(Entity gaeEntity, Object entity, MetamodelImpl metamodel, EntityMetadata metadata, Set<Attribute> attributes) {
         for (Attribute attribute : attributes) {
             /*
-             * id attribute will be saved, is redundant since is also stored within the Key
-             * and by pass associations (i.e. relations) that are handled in handleRelations()
+             * ID attribute will be saved (is redundant since is also stored within the Key).
+             * By pass associations (i.e. relations) that are handled in handleRelations()
              */
             if (!attribute.isAssociation()) {
                 if (metamodel.isEmbeddable(((AbstractAttribute) attribute).getBindableJavaType())) {
@@ -191,6 +170,15 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
     /*
      * persist join table for ManyToMany
+     *
+     * for example:
+     *  -----------------------------------------------------------------------
+     *  |                    EMPLOYEE_PROJECT (joinTableName)                  |
+     *  -----------------------------------------------------------------------
+     *  | EMPLOYEE_ID (joinColumnName)  |  PROJECT_ID (inverseJoinColumnName)  |
+     *  -----------------------------------------------------------------------
+     *  |          id  (owner)          |             id (child)               |
+     *  -----------------------------------------------------------------------
      */
     @Override
     public void persistJoinTable(JoinTableData joinTableData) {
@@ -201,43 +189,14 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         String inverseJoinColumnName = joinTableData.getInverseJoinColumnName();
         Map<Object, Set<Object>> joinTableRecords = joinTableData.getJoinTableRecords();
 
-        /*
-         * need to save owner and target Class in the relation
-         * to rebuild the entity in getColumnsById()
-         *
-         * The final table will be stored like this:
-         *
-         *  ------------------------------------------------------------------------
-         *  | EMPLOYEE_ID  |  EMPLOYEE_ID_CLASS  | PROJECT_ID  | PROJECT_ID_CLASS   |
-         *  ------------------------------------------------------------------------
-         *  |     id       | it.polimi.Employee  |      id     | it.polimi.Project  |
-         *  ------------------------------------------------------------------------
-         */
-        // Class ownerClass = joinTableData.getEntityClass();
-        // EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, ownerClass);
-        // Class targetClass = null;
-        // for (Relation r : entityMetadata.getRelations()) {
-        //     if (r.isRelatedViaJoinTable() && r.getJoinTableMetadata().getJoinTableName().equals(joinTableName)) {
-        //         targetClass = r.getTargetEntity();
-        //         break;
-        //     }
-        // }
-        //
-        // if (targetClass == null) {
-        //     throw new PersistenceException("Target class for " + joinTableName + " not found");
-        // }
-        // String joinColumnClass = joinColumnName + "_CLASS";
-        // String inverseJoinColumnClass = inverseJoinColumnName + "_CLASS";
-
         for (Object owner : joinTableRecords.keySet()) {
             Set<Object> children = joinTableRecords.get(owner);
 
             for (Object child : children) {
+                /* let datastore generate ID for the entity */
                 Entity gaeEntity = new Entity(joinTableName);
                 gaeEntity.setProperty(joinColumnName, owner);
-                // gaeEntity.setProperty(joinColumnClass, ownerClass.getCanonicalName());
                 gaeEntity.setProperty(inverseJoinColumnName, child);
-                // gaeEntity.setProperty(inverseJoinColumnClass, targetClass.getCanonicalName());
                 datastore.put(gaeEntity);
 
                 System.out.println(gaeEntity);
@@ -249,7 +208,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     /*------------------------------ FIND OPERATIONS ----------------------------------*/
 
     /*
-     * it's called to found detached entities
+     * it's called to find detached entities
      */
     @Override
     public Object find(Class entityClass, Object id) {
@@ -337,14 +296,15 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("entityClass = [" + entityClass + "], columnsToSelect = [" + columnsToSelect + "], keys = [" + keys + "]");
 
         // TODO review this
-        List results = new ArrayList();
-        for (Object key : keys) {
-            Object object = this.find(entityClass, key);
-            if (object != null) {
-                results.add(object);
-            }
-        }
-        return results;
+        // List results = new ArrayList();
+        // for (Object key : keys) {
+        //     Object object = this.find(entityClass, key);
+        //     if (object != null) {
+        //         results.add(object);
+        //     }
+        // }
+        // return results;
+        throw new NotImplementedException();
     }
 
     @Override
@@ -385,9 +345,10 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     /*
      * used to retrieve owner-side relation for ManyToMany
      *
-     * schemaName = [gae-test], tableName = [EMPLOYEE_PROJECT], pKeyColumnName = [EMPLOYEE_ID],
-     *          columnName = [PROJECT_ID], pKeyColumnValue = [4bb12ff5-f82d-42f4-9607-1e17a10f56ea],
-     *          columnJavaType = [class java.lang.String]
+     * for example:
+     *      select PROJECT_ID (columnName) from EMPLOYEE_PROJECT (tableName)
+     *      where EMPLOYEE_ID (pKeyColumnName) equals (pKeyColumnValue)
+     *
      */
     @Override
     public <E> List<E> getColumnsById(String schemaName, String tableName, String pKeyColumnName, String columnName, Object pKeyColumnValue, Class columnJavaType) {
@@ -416,9 +377,10 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     /*
      * used to retrieve target-side relation for ManyToMany
      *
-     * schemaName = [gae-test], tableName = [EMPLOYEE_PROJECT], pKeyName = [EMPLOYEE_ID],
-     *          columnName = [PROJECT_ID], columnValue = [93f7541a-ec56-4cfc-8944-934f659e5577],
-     *          entityClazz = [class it.polimi.datastore.test.model.EmployeeMTM]
+     * for example:
+     *      select EMPLOYEE_ID (pKeyName) from EMPLOYEE_PROJECT (tableName)
+     *      where PROJECT_ID (columnName) equals (columnValue)
+     *
      */
     @Override
     public Object[] findIdsByColumn(String schemaName, String tableName, String pKeyName, String columnName, Object columnValue, Class entityClazz) {

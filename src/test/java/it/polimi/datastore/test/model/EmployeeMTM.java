@@ -7,6 +7,7 @@ import lombok.ToString;
 
 import javax.persistence.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 @ToString(exclude = "projects")
@@ -44,8 +45,6 @@ public class EmployeeMTM {
         if (this.projects == null) {
             this.projects = new ArrayList<ProjectMTM>();
         }
-        for (ProjectMTM project : projects) {
-            this.projects.add(project);
-        }
+        Collections.addAll(this.projects, projects);
     }
 }
