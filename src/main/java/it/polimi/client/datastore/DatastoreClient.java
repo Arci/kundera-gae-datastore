@@ -418,12 +418,30 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println();
     }
 
+    /*
+     * used to delete relation for ManyToMany
+     *
+     * for example:
+     *      delete from EMPLOYEE_PROJECT (tableName)
+     *      where EMPLOYEE_ID (columnName) equals (columnValue)
+     *
+     */
     @Override
     public void deleteByColumn(String schemaName, String tableName, String columnName, Object columnValue) {
         System.out.println("DatastoreClient.deleteByColumn");
         System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], columnName = [" + columnName + "], columnValue = [" + columnValue + "]");
 
-        // TODO Auto-generated method stub
-        throw new NotImplementedException();
+        Query q = new Query(tableName)
+                .setFilter(new Query.FilterPredicate(columnName,
+                        Query.FilterOperator.EQUAL,
+                        columnValue)).setKeysOnly();
+        System.out.println("\n" + q + "\n");
+
+        List<Entity> entities = datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
+        if (!entities.isEmpty()) {
+            for (Entity entity : entities) {
+                datastore.delete(entity.getKey());
+            }
+        }
     }
 }
