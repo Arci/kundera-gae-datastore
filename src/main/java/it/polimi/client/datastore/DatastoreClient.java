@@ -201,20 +201,48 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         String inverseJoinColumnName = joinTableData.getInverseJoinColumnName();
         Map<Object, Set<Object>> joinTableRecords = joinTableData.getJoinTableRecords();
 
+        /*
+         * need to save owner and target Class in the relation
+         * to rebuild the entity in getColumnsById()
+         *
+         * The final table will be stored like this:
+         *
+         *  ------------------------------------------------------------------------
+         *  | EMPLOYEE_ID  |  EMPLOYEE_ID_CLASS  | PROJECT_ID  | PROJECT_ID_CLASS   |
+         *  ------------------------------------------------------------------------
+         *  |     id       | it.polimi.Employee  |      id     | it.polimi.Project  |
+         *  ------------------------------------------------------------------------
+         */
+        // Class ownerClass = joinTableData.getEntityClass();
+        // EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, ownerClass);
+        // Class targetClass = null;
+        // for (Relation r : entityMetadata.getRelations()) {
+        //     if (r.isRelatedViaJoinTable() && r.getJoinTableMetadata().getJoinTableName().equals(joinTableName)) {
+        //         targetClass = r.getTargetEntity();
+        //         break;
+        //     }
+        // }
+        //
+        // if (targetClass == null) {
+        //     throw new PersistenceException("Target class for " + joinTableName + " not found");
+        // }
+        // String joinColumnClass = joinColumnName + "_CLASS";
+        // String inverseJoinColumnClass = inverseJoinColumnName + "_CLASS";
+
         for (Object owner : joinTableRecords.keySet()) {
             Set<Object> children = joinTableRecords.get(owner);
 
-            System.out.println("joinColumnName = [" + joinColumnName + "], value = [" + owner + "]");
             for (Object child : children) {
-                System.out.println("inverseJoinColumnName = [" + inverseJoinColumnName + "], value = [" + child + "]");
                 Entity gaeEntity = new Entity(joinTableName);
                 gaeEntity.setProperty(joinColumnName, owner);
+                // gaeEntity.setProperty(joinColumnClass, ownerClass.getCanonicalName());
                 gaeEntity.setProperty(inverseJoinColumnName, child);
+                // gaeEntity.setProperty(inverseJoinColumnClass, targetClass.getCanonicalName());
                 datastore.put(gaeEntity);
+
+                System.out.println(gaeEntity);
             }
-            System.out.println();
         }
-        System.out.println();
     }
 
     /*---------------------------------------------------------------------------------*/
@@ -231,13 +259,12 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         try {
             EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entityClass);
             Entity gaeEntity = get(entityMetadata.getTableName(), id);
-            if(gaeEntity == null) {
+            if (gaeEntity == null) {
                 // case not found
                 return null;
             }
             System.out.println(gaeEntity);
             return initializeEntity(gaeEntity, entityClass);
-
         } catch (InstantiationException e) {
             e.printStackTrace();
             throw new KunderaException(e.getMessage());
@@ -330,16 +357,6 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         // return null;
     }
 
-    @Override
-    public Object[] findIdsByColumn(String schemaName, String tableName, String pKeyName, String columnName, Object columnValue, Class entityClazz) {
-        System.out.println("DatastoreClient.findIdsByColumn");
-        System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], pKeyName = [" + pKeyName + "], columnName = [" + columnName + "], columnValue = [" + columnValue + "], entityClazz = [" + entityClazz + "]");
-
-        // TODO Auto-generated method stub
-        throw new NotImplementedException();
-        // return null;
-    }
-
     /*
      * used to retrieve relation for OneToMany
      * (ManyToOne inverse relation)
@@ -356,23 +373,75 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("\n" + q + "\n");
 
         List<Object> results = new ArrayList<Object>();
-        for (Entity entity : datastore.prepare(q).asList(FetchOptions.Builder.withDefaults())) {
-            results.add(find(entityClazz, entity.getKey().getName()));
+        List<Entity> entities = datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
+        if (!entities.isEmpty()) {
+            for (Entity entity : entities) {
+                results.add(find(entityClazz, entity.getKey().getName()));
+            }
         }
         return results;
     }
 
     /*
-     * used to retrieve relation for ManyToMany
+     * used to retrieve owner-side relation for ManyToMany
+     *
+     * schemaName = [gae-test], tableName = [EMPLOYEE_PROJECT], pKeyColumnName = [EMPLOYEE_ID],
+     *          columnName = [PROJECT_ID], pKeyColumnValue = [4bb12ff5-f82d-42f4-9607-1e17a10f56ea],
+     *          columnJavaType = [class java.lang.String]
      */
     @Override
     public <E> List<E> getColumnsById(String schemaName, String tableName, String pKeyColumnName, String columnName, Object pKeyColumnValue, Class columnJavaType) {
         System.out.println("DatastoreClient.getColumnsById");
         System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], pKeyColumnName = [" + pKeyColumnName + "], columnName = [" + columnName + "], pKeyColumnValue = [" + pKeyColumnValue + "], columnJavaType = [" + columnJavaType + "]");
 
-        // TODO Auto-generated method stub
-        throw new NotImplementedException();
-        // return null;
+        Query q = new Query(tableName)
+                .setFilter(new Query.FilterPredicate(pKeyColumnName,
+                        Query.FilterOperator.EQUAL,
+                        pKeyColumnValue));
+        System.out.println("\n" + q + "\n");
+
+        List<E> results = new ArrayList<E>();
+        List<Entity> entities = datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
+        System.out.println(columnName + " for " + pKeyColumnName + "[" + pKeyColumnValue + "]:");
+        if (!entities.isEmpty()) {
+            for (Entity entity : entities) {
+                System.out.println("\t" + entity.getProperty(columnName));
+                results.add((E) entity.getProperty(columnName));
+            }
+        }
+        System.out.println();
+        return results;
+    }
+
+    /*
+     * used to retrieve target-side relation for ManyToMany
+     *
+     * schemaName = [gae-test], tableName = [EMPLOYEE_PROJECT], pKeyName = [EMPLOYEE_ID],
+     *          columnName = [PROJECT_ID], columnValue = [93f7541a-ec56-4cfc-8944-934f659e5577],
+     *          entityClazz = [class it.polimi.datastore.test.model.EmployeeMTM]
+     */
+    @Override
+    public Object[] findIdsByColumn(String schemaName, String tableName, String pKeyName, String columnName, Object columnValue, Class entityClazz) {
+        System.out.println("DatastoreClient.findIdsByColumn");
+        System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], pKeyName = [" + pKeyName + "], columnName = [" + columnName + "], columnValue = [" + columnValue + "], entityClazz = [" + entityClazz + "]");
+
+        Query q = new Query(tableName)
+                .setFilter(new Query.FilterPredicate(columnName,
+                        Query.FilterOperator.EQUAL,
+                        columnValue));
+        System.out.println("\n" + q + "\n");
+
+        List<Object> results = new ArrayList<Object>();
+        List<Entity> entities = datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
+        System.out.println(pKeyName + " for " + columnName + "[" + columnValue + "]:");
+        if (!entities.isEmpty()) {
+            for (Entity entity : entities) {
+                System.out.println("\t" + entity.getProperty(pKeyName));
+                results.add(entity.getProperty(pKeyName));
+            }
+        }
+        System.out.println();
+        return results.toArray();
     }
 
     /*---------------------------------------------------------------------------------*/
@@ -398,5 +467,4 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         // TODO Auto-generated method stub
         throw new NotImplementedException();
     }
-
 }

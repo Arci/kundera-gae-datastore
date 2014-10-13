@@ -31,8 +31,8 @@ public class ProjectMTM {
     @ManyToMany(mappedBy = "projects")
     private List<EmployeeMTM> employees;
 
-    public void addEmployees(EmployeeMTM... employees ) {
-        for(EmployeeMTM e : employees){
+    public void addEmployees(EmployeeMTM... employees) {
+        for (EmployeeMTM e : employees) {
             this.employees.add(e);
         }
     }

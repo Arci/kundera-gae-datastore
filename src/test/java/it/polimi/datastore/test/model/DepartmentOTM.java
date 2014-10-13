@@ -31,5 +31,4 @@ public class DepartmentOTM {
     @Setter
     @OneToMany(mappedBy = "department")
     private List<EmployeeMTObis> employees;
-
 }

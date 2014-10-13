@@ -2,12 +2,12 @@ package it.polimi.client.datastore;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
-import it.polimi.client.datastore.config.DatastorePropertyReader;
-import it.polimi.client.datastore.schemamanager.DatastoreSchemaManager;
 import com.impetus.kundera.client.Client;
 import com.impetus.kundera.configure.schema.api.SchemaManager;
 import com.impetus.kundera.loader.GenericClientFactory;
 import com.impetus.kundera.persistence.EntityReader;
+import it.polimi.client.datastore.config.DatastorePropertyReader;
+import it.polimi.client.datastore.schemamanager.DatastoreSchemaManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

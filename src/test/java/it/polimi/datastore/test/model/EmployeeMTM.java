@@ -6,6 +6,7 @@ import lombok.Setter;
 import lombok.ToString;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.List;
 
 @ToString(exclude = "projects")
@@ -39,7 +40,12 @@ public class EmployeeMTM {
             inverseJoinColumns = {@JoinColumn(name = "PROJECT_ID")})
     private List<ProjectMTM> projects;
 
-    public void addProject(ProjectMTM project) {
-        this.projects.add(project);
+    public void addProjects(ProjectMTM... projects) {
+        if (this.projects == null) {
+            this.projects = new ArrayList<ProjectMTM>();
+        }
+        for (ProjectMTM project : projects) {
+            this.projects.add(project);
+        }
     }
 }
