@@ -37,9 +37,6 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     private static final Logger logger = LoggerFactory.getLogger(DatastoreClient.class);
     private EntityReader reader;
     private DatastoreService datastore;
-    private int batchSize;
-
-    private Map<Key, Class> oneToManyPrefetch = new HashMap<Key, Class>();
 
     protected DatastoreClient(final KunderaMetadata kunderaMetadata, Map<String, Object> properties,
                               String persistenceUnit, final ClientMetadata clientMetadata, IndexManager indexManager,
