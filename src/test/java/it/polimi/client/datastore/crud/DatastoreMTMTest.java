@@ -80,38 +80,38 @@ public class DatastoreMTMTest {
         Assert.assertEquals("Fabio", foundEmployee1.getName());
         Assert.assertEquals((Long) 123L, foundEmployee1.getSalary());
         print("access projects");
-        int projectCount = 0;
-        int project1Employees = 0;
-        int project2Employees = 0;
+        int projectCount = 2;
+        int project1Employees = 1;
+        int project2Employees = 2;
         for (ProjectMTM proj : foundEmployee1.getProjects()) {
             if (proj.getId().equals(prj1Id)) {
-                projectCount++;
+                projectCount--;
                 Assert.assertEquals(prj1Id, proj.getId());
                 Assert.assertEquals("Project 1", proj.getName());
                 print("access employees project 1");
                 for (EmployeeMTM emp : proj.getEmployees()) {
                     System.out.println(emp);
                     if (emp.getId().equals(emp1Id)) {
-                        project1Employees++;
+                        project1Employees--;
                         Assert.assertEquals(emp1Id, emp.getId());
                         Assert.assertEquals("Fabio", emp.getName());
                         Assert.assertEquals((Long) 123L, emp.getSalary());
                     }
                 }
             } else if (proj.getId().equals(prj2Id)) {
-                projectCount++;
+                projectCount--;
                 Assert.assertEquals(prj2Id, proj.getId());
                 Assert.assertEquals("Project 2", proj.getName());
                 print("access employees project 2");
                 for (EmployeeMTM emp : proj.getEmployees()) {
                     System.out.println(emp);
                     if (emp.getId().equals(emp1Id)) {
-                        project2Employees++;
+                        project2Employees--;
                         Assert.assertEquals(emp1Id, emp.getId());
                         Assert.assertEquals("Fabio", emp.getName());
                         Assert.assertEquals((Long) 123L, emp.getSalary());
                     } else if (emp.getId().equals(emp2Id)) {
-                        project2Employees++;
+                        project2Employees--;
                         Assert.assertEquals(emp2Id, emp.getId());
                         Assert.assertEquals("Crizia", emp.getName());
                         Assert.assertEquals((Long) 456L, emp.getSalary());
@@ -119,9 +119,9 @@ public class DatastoreMTMTest {
                 }
             }
         }
-        Assert.assertEquals(2, projectCount);
-        Assert.assertEquals(1, project1Employees);
-        Assert.assertEquals(2, project2Employees);
+        Assert.assertEquals(0, projectCount);
+        Assert.assertEquals(0, project1Employees);
+        Assert.assertEquals(0, project2Employees);
 
         print("employee 2");
         EmployeeMTM foundEmployee2 = em.find(EmployeeMTM.class, emp2Id);
@@ -130,38 +130,38 @@ public class DatastoreMTMTest {
         Assert.assertEquals("Crizia", foundEmployee2.getName());
         Assert.assertEquals((Long) 456L, foundEmployee2.getSalary());
         print("access projects");
-        projectCount = 0;
-        project2Employees = 0;
-        int project3Employees = 0;
+        projectCount = 2;
+        project2Employees = 2;
+        int project3Employees = 1;
         for (ProjectMTM proj : foundEmployee2.getProjects()) {
             if (proj.getId().equals(prj2Id)) {
-                projectCount++;
+                projectCount--;
                 Assert.assertEquals(prj2Id, proj.getId());
                 Assert.assertEquals("Project 2", proj.getName());
                 print("access employees project 2");
                 for (EmployeeMTM emp : proj.getEmployees()) {
                     System.out.println(emp);
                     if (emp.getId().equals(emp1Id)) {
-                        project2Employees++;
+                        project2Employees--;
                         Assert.assertEquals(emp1Id, emp.getId());
                         Assert.assertEquals("Fabio", emp.getName());
                         Assert.assertEquals((Long) 123L, emp.getSalary());
                     } else if (emp.getId().equals(emp2Id)) {
-                        project2Employees++;
+                        project2Employees--;
                         Assert.assertEquals(emp2Id, emp.getId());
                         Assert.assertEquals("Crizia", emp.getName());
                         Assert.assertEquals((Long) 456L, emp.getSalary());
                     }
                 }
             } else if (proj.getId().equals(prj3Id)) {
-                projectCount++;
+                projectCount--;
                 Assert.assertEquals(prj3Id, proj.getId());
                 Assert.assertEquals("Project 3", proj.getName());
                 print("access employees project 3");
                 for (EmployeeMTM emp : proj.getEmployees()) {
                     System.out.println(emp);
                     if (emp.getId().equals(emp2Id)) {
-                        project3Employees++;
+                        project3Employees--;
                         Assert.assertEquals(emp2Id, emp.getId());
                         Assert.assertEquals("Crizia", emp.getName());
                         Assert.assertEquals((Long) 456L, emp.getSalary());
@@ -169,9 +169,9 @@ public class DatastoreMTMTest {
                 }
             }
         }
-        Assert.assertEquals(2, projectCount);
-        Assert.assertEquals(1, project3Employees);
-        Assert.assertEquals(2, project2Employees);
+        Assert.assertEquals(0, projectCount);
+        Assert.assertEquals(0, project2Employees);
+        Assert.assertEquals(0, project3Employees);
 
         print("update");
         project1.setName("Project 11");
@@ -190,38 +190,38 @@ public class DatastoreMTMTest {
         Assert.assertEquals("Fabio", foundEmployee1.getName());
         Assert.assertEquals((Long) 123L, foundEmployee1.getSalary());
         print("access projects");
-        projectCount = 0;
-        project1Employees = 0;
-        project2Employees = 0;
+        projectCount = 2;
+        project1Employees = 1;
+        project2Employees = 2;
         for (ProjectMTM proj : foundEmployee1.getProjects()) {
             if (proj.getId().equals(prj1Id)) {
-                projectCount++;
+                projectCount--;
                 Assert.assertEquals(prj1Id, proj.getId());
                 Assert.assertEquals("Project 11", proj.getName());
                 print("access employees project 11");
                 for (EmployeeMTM emp : proj.getEmployees()) {
                     System.out.println(emp);
                     if (emp.getId().equals(emp1Id)) {
-                        project1Employees++;
+                        project1Employees--;
                         Assert.assertEquals(emp1Id, emp.getId());
                         Assert.assertEquals("Fabio", emp.getName());
                         Assert.assertEquals((Long) 123L, emp.getSalary());
                     }
                 }
             } else if (proj.getId().equals(prj2Id)) {
-                projectCount++;
+                projectCount--;
                 Assert.assertEquals(prj2Id, proj.getId());
                 Assert.assertEquals("Project 22", proj.getName());
                 print("access employees project 22");
                 for (EmployeeMTM emp : proj.getEmployees()) {
                     System.out.println(emp);
                     if (emp.getId().equals(emp1Id)) {
-                        project2Employees++;
+                        project2Employees--;
                         Assert.assertEquals(emp1Id, emp.getId());
                         Assert.assertEquals("Fabio", emp.getName());
                         Assert.assertEquals((Long) 123L, emp.getSalary());
                     } else if (emp.getId().equals(emp2Id)) {
-                        project2Employees++;
+                        project2Employees--;
                         Assert.assertEquals(emp2Id, emp.getId());
                         Assert.assertEquals("Crizia", emp.getName());
                         Assert.assertEquals((Long) 456L, emp.getSalary());
@@ -229,9 +229,9 @@ public class DatastoreMTMTest {
                 }
             }
         }
-        Assert.assertEquals(2, projectCount);
-        Assert.assertEquals(1, project1Employees);
-        Assert.assertEquals(2, project2Employees);
+        Assert.assertEquals(0, projectCount);
+        Assert.assertEquals(0, project1Employees);
+        Assert.assertEquals(0, project2Employees);
 
         print("employee 2");
         foundEmployee2 = em.find(EmployeeMTM.class, emp2Id);
@@ -240,38 +240,38 @@ public class DatastoreMTMTest {
         Assert.assertEquals("Crizia", foundEmployee2.getName());
         Assert.assertEquals((Long) 456L, foundEmployee2.getSalary());
         print("access projects");
-        projectCount = 0;
-        project2Employees = 0;
-        project3Employees = 0;
+        projectCount = 2;
+        project2Employees = 2;
+        project3Employees = 1;
         for (ProjectMTM proj : foundEmployee2.getProjects()) {
             if (proj.getId().equals(prj2Id)) {
-                projectCount++;
+                projectCount--;
                 Assert.assertEquals(prj2Id, proj.getId());
                 Assert.assertEquals("Project 22", proj.getName());
                 print("access employees project 22");
                 for (EmployeeMTM emp : proj.getEmployees()) {
                     System.out.println(emp);
                     if (emp.getId().equals(emp1Id)) {
-                        project2Employees++;
+                        project2Employees--;
                         Assert.assertEquals(emp1Id, emp.getId());
                         Assert.assertEquals("Fabio", emp.getName());
                         Assert.assertEquals((Long) 123L, emp.getSalary());
                     } else if (emp.getId().equals(emp2Id)) {
-                        project2Employees++;
+                        project2Employees--;
                         Assert.assertEquals(emp2Id, emp.getId());
                         Assert.assertEquals("Crizia", emp.getName());
                         Assert.assertEquals((Long) 456L, emp.getSalary());
                     }
                 }
             } else if (proj.getId().equals(prj3Id)) {
-                projectCount++;
+                projectCount--;
                 Assert.assertEquals(prj3Id, proj.getId());
                 Assert.assertEquals("Project 33", proj.getName());
                 print("access employees project 33");
                 for (EmployeeMTM emp : proj.getEmployees()) {
                     System.out.println(emp);
                     if (emp.getId().equals(emp2Id)) {
-                        project3Employees++;
+                        project3Employees--;
                         Assert.assertEquals(emp2Id, emp.getId());
                         Assert.assertEquals("Crizia", emp.getName());
                         Assert.assertEquals((Long) 456L, emp.getSalary());
@@ -279,9 +279,9 @@ public class DatastoreMTMTest {
                 }
             }
         }
-        Assert.assertEquals(2, projectCount);
-        Assert.assertEquals(1, project3Employees);
-        Assert.assertEquals(2, project2Employees);
+        Assert.assertEquals(0, projectCount);
+        Assert.assertEquals(0, project2Employees);
+        Assert.assertEquals(0, project3Employees);
 
         print("delete");
         em.remove(foundEmployee1);
@@ -292,11 +292,40 @@ public class DatastoreMTMTest {
         project2 = em.find(ProjectMTM.class, prj2Id);
         Assert.assertNull(project2);
 
-        foundEmployee2 = em.find(EmployeeMTM.class, emp2Id);
-        Assert.assertNotNull(foundEmployee2);
-
         project3 = em.find(ProjectMTM.class, prj3Id);
         Assert.assertNotNull(project3);
+
+        print("employee 2");
+        foundEmployee2 = em.find(EmployeeMTM.class, emp2Id);
+        Assert.assertNotNull(foundEmployee2);
+        Assert.assertEquals(emp2Id, foundEmployee2.getId());
+        Assert.assertEquals("Crizia", foundEmployee2.getName());
+        Assert.assertEquals((Long) 456L, foundEmployee2.getSalary());
+        print("access projects");
+        projectCount = 1;
+        project3Employees = 1;
+        for (ProjectMTM proj : foundEmployee2.getProjects()) {
+            if(proj == null){
+                print("detected null project");
+            }
+            if (proj != null && proj.getId().equals(prj3Id)) {
+                projectCount--;
+                Assert.assertEquals(prj3Id, proj.getId());
+                Assert.assertEquals("Project 33", proj.getName());
+                print("access employees project 33");
+                for (EmployeeMTM emp : proj.getEmployees()) {
+                    System.out.println(emp);
+                    if (emp.getId().equals(emp2Id)) {
+                        project3Employees--;
+                        Assert.assertEquals(emp2Id, emp.getId());
+                        Assert.assertEquals("Crizia", emp.getName());
+                        Assert.assertEquals((Long) 456L, emp.getSalary());
+                    }
+                }
+            }
+        }
+        Assert.assertEquals(0, projectCount);
+        Assert.assertEquals(0, project3Employees);
     }
 
     @Test

@@ -72,23 +72,24 @@ public class DatastoreOTMTest {
         DepartmentOTM foundDepartment = em.find(DepartmentOTM.class, depId);
         Assert.assertNotNull(foundDepartment);
         print("access employees");
-        int counter = 0;
+        int counter = 2;
         for (EmployeeMTObis emp : foundDepartment.getEmployees()) {
             Assert.assertNotNull(emp);
             Assert.assertEquals(depId, emp.getDepartment().getId());
             Assert.assertEquals("Computer Science", emp.getDepartment().getName());
             if (emp.getId().equals(emp1Id)) {
+                counter--;
                 Assert.assertEquals(emp1Id, emp.getId());
                 Assert.assertEquals("Fabio", emp.getName());
                 Assert.assertEquals((Long) 123L, emp.getSalary());
             } else if (emp.getId().equals(emp2Id)) {
+                counter--;
                 Assert.assertEquals(emp2Id, emp.getId());
                 Assert.assertEquals("Crizia", emp.getName());
                 Assert.assertEquals((Long) 456L, emp.getSalary());
             }
-            counter++;
         }
-        Assert.assertEquals(2, counter);
+        Assert.assertEquals(0, counter);
 
         print("update");
         foundDepartment.setName("Software Engineering");
@@ -99,24 +100,24 @@ public class DatastoreOTMTest {
         foundDepartment = em.find(DepartmentOTM.class, depId);
         Assert.assertNotNull(foundDepartment);
         print("access employees");
-        counter = 0;
+        counter = 2;
         for (EmployeeMTObis emp : foundDepartment.getEmployees()) {
             Assert.assertNotNull(emp);
             Assert.assertEquals(depId, emp.getDepartment().getId());
             Assert.assertEquals("Software Engineering", emp.getDepartment().getName());
             if (emp.getId().equals(emp1Id)) {
-                counter++;
+                counter--;
                 Assert.assertEquals(emp1Id, emp.getId());
                 Assert.assertEquals("Fabio", emp.getName());
                 Assert.assertEquals((Long) 123L, emp.getSalary());
             } else if (emp.getId().equals(emp2Id)) {
-                counter++;
+                counter--;
                 Assert.assertEquals(emp2Id, emp.getId());
                 Assert.assertEquals("Crizia", emp.getName());
                 Assert.assertEquals((Long) 456L, emp.getSalary());
             }
         }
-        Assert.assertEquals(2, counter);
+        Assert.assertEquals(0, counter);
 
         print("delete");
         em.remove(foundDepartment);

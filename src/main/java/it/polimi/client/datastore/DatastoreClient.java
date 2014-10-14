@@ -91,6 +91,11 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         MetamodelImpl metamodel = KunderaMetadataManager.getMetamodel(kunderaMetadata,
                 entityMetadata.getPersistenceUnit());
         EntityType entityType = metamodel.entity(entityMetadata.getEntityClazz());
+
+        /* TODO decidere
+         * tutte le entity figlie di una root fittizia? per averle
+         * nello stesso entity group
+         */
         Entity gaeEntity = new Entity(entityMetadata.getTableName(), (String) id);
 
         handleAttributes(gaeEntity, entity, metamodel, entityMetadata, entityType.getAttributes());
@@ -364,6 +369,18 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         if (!entities.isEmpty()) {
             for (Entity entity : entities) {
                 System.out.println("\t" + entity.getProperty(columnName));
+                /*
+                 * TODO handle this case
+                 * se qui si prova a fare una get(kind, entity.getProperty(columnName))
+                 * e viene ritornato null, c'è una broken reference, cioè un employee
+                 * in relazione con un project che non esiste più, se non sia fa niente
+                 * employee.getProjects() avrà un elemento a null.
+                 * Bisognerebbe eliminare la riga dalla tabella di join se qui la get
+                 * ritorna null.
+                 * per farlo però serve il Kind, bisognerebbe salvare (dappertutto)
+                 * al posto che solo l'id, la chiave come valore della relazione nel database.
+                 *
+                 */
                 results.add((E) entity.getProperty(columnName));
             }
         }

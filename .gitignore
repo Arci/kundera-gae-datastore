@@ -16,6 +16,3 @@ bin
 ## Maven stuff ##
 target/
 test-output/
-
-## Datastore directory ##
-datastore/
