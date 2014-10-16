@@ -24,6 +24,14 @@ public class DatastoreQuery extends QueryImpl {
     private static Logger logger = LoggerFactory.getLogger(DatastoreQuery.class);
     private DatastoreEntityReader reader;
 
+     /*
+     * TODO
+     *
+     * verificare se Client.findAll e Client.find(...., embeddedColumnMap)
+     * vengono chiamate da qui o da superclasse (QueryImpl)
+     *
+     */
+
     /**
      * Instantiates a new query impl.
      *
@@ -35,6 +43,16 @@ public class DatastoreQuery extends QueryImpl {
         super(kunderaQuery, persistenceDelegator, kunderaMetadata);
     }
 
+    @Override
+    protected EntityReader getReader() {
+        return new DatastoreEntityReader(kunderaQuery, kunderaMetadata);
+    }
+
+    @Override
+    public void close() {
+        /* do nothing, nothing to close */
+    }
+
     /**
      * This method would be called by Kundera to populate entities while it doesn't hold any relationships.
      */
@@ -42,6 +60,8 @@ public class DatastoreQuery extends QueryImpl {
     protected List<Object> populateEntities(EntityMetadata m, Client client) {
         System.out.println("DatastoreQuery.populateEntities");
         System.out.println("m = [" + m + "], client = [" + client + "]");
+        System.out.println("kunderaQuery = [" + this.kunderaQuery + "]");
+
         // TODO Auto-generated method stub
         throw new NotImplementedException();
         // return null;
@@ -54,38 +74,43 @@ public class DatastoreQuery extends QueryImpl {
     protected List<Object> recursivelyPopulateEntities(EntityMetadata m, Client client) {
         System.out.println("DatastoreQuery.recursivelyPopulateEntities");
         System.out.println("m = [" + m + "], client = [" + client + "]");
+        System.out.println("kunderaQuery = [" + this.kunderaQuery + "]");
+
+        //return setRelationEntities(queryResults, client, m);
         // TODO Auto-generated method stub
         throw new NotImplementedException();
         // return null;
-    }
-
-    @Override
-    protected EntityReader getReader() {
-        System.out.println("DatastoreQuery.getReader");
-        return new DatastoreEntityReader(kunderaQuery, kunderaMetadata);
     }
 
     /**
      * This method is called by Kundera when executeUpdate method is invoked on query instance that
      * represents update/ delete query. Your responsibility would be to call appropriate methods of client.
      */
+    /*
+     * used for update and delete queries
+     */
     @Override
     protected int onExecuteUpdate() {
         System.out.println("DatastoreQuery.onExecuteUpdate");
-        // TODO Auto-generated method stub
+        System.out.println("kunderaQuery = [" + this.kunderaQuery + "]");
+
+        /*
+         * TODO decide
+         *
+         * delete all and re-insert
+         * return onUpdateDeleteEvent();
+         *
+         * or
+         * super.onDeleteOrUpdate(queryResults);
+         */
         throw new NotImplementedException();
         // return 0;
     }
 
     @Override
-    public void close() {
-        System.out.println("DatastoreQuery.close");
-        /* do nothing, nothing to close */
-    }
-
-    @Override
     public Iterator iterate() {
         System.out.println("DatastoreQuery.iterate");
+
         // TODO If planning to build scrolling/pagination, then have a look at ResultIterator implementation
         //return new ResultIterator(...)
         throw new NotImplementedException();
