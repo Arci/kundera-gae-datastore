@@ -125,11 +125,6 @@ public class DatastoreOTMTest {
         Assert.assertNull(foundDepartment);
     }
 
-    @Test
-    public void testQuery() {
-        // TODO
-    }
-
     private void clear() {
         em.clear();
         print("clear entity manager");

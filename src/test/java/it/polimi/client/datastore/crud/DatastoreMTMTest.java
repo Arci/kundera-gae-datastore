@@ -305,7 +305,7 @@ public class DatastoreMTMTest {
         projectCount = 1;
         project3Employees = 1;
         for (ProjectMTM proj : foundEmployee2.getProjects()) {
-            if(proj == null){
+            if (proj == null) {
                 print("detected null project");
             }
             if (proj != null && proj.getId().equals(prj3Id)) {
@@ -326,11 +326,6 @@ public class DatastoreMTMTest {
         }
         Assert.assertEquals(0, projectCount);
         Assert.assertEquals(0, project3Employees);
-    }
-
-    @Test
-    public void testQuery() {
-        // TODO
     }
 
     private void clear() {

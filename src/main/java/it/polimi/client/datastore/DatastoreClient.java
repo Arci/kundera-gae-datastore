@@ -76,6 +76,12 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
      *      - quando si salvano (initializeRelations)
      *      - nelle due colonne delle joinTables (persistJoinTable)
      *
+     * 3. test con string id e long id inseriti dall'utente
+     *
+     * 4. embedded entities (@Embedded)
+     *
+     * 5. element collections (@ElementCollection)
+     *
      */
 
     /*---------------------------------------------------------------------------------*/
@@ -85,13 +91,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     public Object generate() {
         /*
          * use random UUID instead of datastore generated
-         * since here is not available entityClass.
-         *
-         * If the entityClass is available, a Key can be generated as follow
-         *
-         * KeyRange keyRange = datastore.allocateIds(entityType.getName(), 1L);
-         * Key key = keyRange.getStart();
-         *
+         * since here is not available the class of the entity to be persisted.
          */
         return UUID.randomUUID().toString();
     }
@@ -191,7 +191,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
      *  -----------------------------------------------------------------------
      *  | EMPLOYEE_ID (joinColumnName)  |  PROJECT_ID (inverseJoinColumnName)  |
      *  -----------------------------------------------------------------------
-     *  |         key (owner)           |            key (child)               |
+     *  |          id (owner)           |             id (child)               |
      *  -----------------------------------------------------------------------
      */
     @Override
@@ -203,25 +203,25 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         String inverseJoinColumnName = joinTableData.getInverseJoinColumnName();
         Map<Object, Set<Object>> joinTableRecords = joinTableData.getJoinTableRecords();
 
-        // TODO problem, not able to get classes from getColumnsById and findIdsByColumn
-        // Class ownerClass = joinTableData.getEntityClass();
-        // Class childClass = null;
-        // EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, ownerClass);
+        // TODO cannot use this, in getColumnsById and findIdsByColumn not able to get entities class
+        // Class joinColumnClass = joinTableData.getEntityClass();
+        // Class inverseJoinColumnClass = null;
+        // EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, joinColumnClass);
         // for (Relation relation : entityMetadata.getRelations()) {
-        //     if (relation.isRelatedViaJoinTable() && relation.getJoinTableMetadata().getJoinTableName().equals(joinTableName)) {
-        //         childClass = relation.getTargetEntity();
-        //         break;
-        //     }
+        //      if (relation.isRelatedViaJoinTable() && relation.getJoinTableMetadata().getJoinTableName().equals(joinTableName)) {
+        //          inverseJoinColumnClass = relation.getTargetEntity();
+        //          break;
+        //      }
         // }
-        // if (childClass == null) {
-        //     throw new KunderaException("Cannot find ManyToMany relation in " + ownerClass);
+        // if (inverseJoinColumnClass == null) {
+        //      throw new KunderaException("Cannot find ManyToMany relation in " + joinColumnClass);
         // }
 
         for (Object owner : joinTableRecords.keySet()) {
             Set<Object> children = joinTableRecords.get(owner);
-            //Key ownerKey = KeyFactory.createKey(ownerClass.getSimpleName(), (String) owner);
+            //Key ownerKey = KeyFactory.createKey(joinColumnClass.getSimpleName(), (String) owner);
             for (Object child : children) {
-                //Key childKey = KeyFactory.createKey(childClass.getSimpleName(), (String) child);
+                //Key childKey = KeyFactory.createKey(inverseJoinColumnClass.getSimpleName(), (String) child);
                 /* let datastore generate ID for the entity */
                 Entity gaeEntity = new Entity(joinTableName);
                 // gaeEntity.setProperty(joinColumnName, ownerKey);
@@ -332,7 +332,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     private void initializeEmbeddedAttribute(Entity gaeEntity, Object entity, Attribute attribute, EntityMetadata entityMetadata) {
         System.out.println("DatastoreClient.initializeEmbeddedAttribute");
 
-        // TODO fill embedded properties from embeddedEntity
+        // TODO fill embedded property from embeddedEntity
     }
 
     private void initializeRelation(Entity gaeEntity, Attribute attribute, Map<String, Object> relationMap) {

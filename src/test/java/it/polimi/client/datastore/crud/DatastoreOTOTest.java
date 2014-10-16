@@ -93,11 +93,6 @@ public class DatastoreOTOTest {
         Assert.assertNull(foundEmployee);
     }
 
-    @Test
-    public void testQuery() {
-        // TODO
-    }
-
     private void clear() {
         em.clear();
         print("clear entity manager");
