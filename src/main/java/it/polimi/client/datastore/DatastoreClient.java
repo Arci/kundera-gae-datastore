@@ -12,6 +12,7 @@ import com.impetus.kundera.metadata.KunderaMetadataManager;
 import com.impetus.kundera.metadata.model.ClientMetadata;
 import com.impetus.kundera.metadata.model.EntityMetadata;
 import com.impetus.kundera.metadata.model.MetamodelImpl;
+import com.impetus.kundera.metadata.model.Relation;
 import com.impetus.kundera.metadata.model.attributes.AbstractAttribute;
 import com.impetus.kundera.metadata.model.type.AbstractManagedType;
 import com.impetus.kundera.persistence.EntityManagerFactoryImpl.KunderaMetadata;
@@ -65,6 +66,18 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         return DatastoreQuery.class;
     }
 
+    /* TODO decidere
+     *
+     * 1. tutte le entity figlie di una root fittizia? per averle
+     * nello stesso entity group
+     *
+     *
+     * 2. settare indici per le query sui campi delle relazioni:
+     *      - quando si salvano (initializeRelations)
+     *      - nelle due colonne delle joinTables (persistJoinTable)
+     *
+     */
+
     /*---------------------------------------------------------------------------------*/
     /*----------------------------- PERSIST OPERATIONS -------------------------------*/
 
@@ -92,14 +105,10 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 entityMetadata.getPersistenceUnit());
         EntityType entityType = metamodel.entity(entityMetadata.getEntityClazz());
 
-        /* TODO decidere
-         * tutte le entity figlie di una root fittizia? per averle
-         * nello stesso entity group
-         */
         Entity gaeEntity = new Entity(entityMetadata.getTableName(), (String) id);
 
         handleAttributes(gaeEntity, entity, metamodel, entityMetadata, entityType.getAttributes());
-        handleRelations(gaeEntity, entity, entityMetadata, rlHolders);
+        handleRelations(gaeEntity, entityMetadata, rlHolders);
         /* discriminator column is used for JPA inheritance */
         handleDiscriminatorColumn(gaeEntity, entityType);
 
@@ -109,12 +118,13 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     }
 
     private void handleAttributes(Entity gaeEntity, Object entity, MetamodelImpl metamodel, EntityMetadata metadata, Set<Attribute> attributes) {
+        String idAttribute = ((AbstractAttribute) metadata.getIdAttribute()).getJPAColumnName();
         for (Attribute attribute : attributes) {
             /*
-             * ID attribute will be saved (is redundant since is also stored within the Key).
+             * By pass ID attribute, is redundant since is also stored within the Key.
              * By pass associations (i.e. relations) that are handled in handleRelations()
              */
-            if (!attribute.isAssociation()) {
+            if (!attribute.isAssociation() && !((AbstractAttribute) attribute).getJPAColumnName().equals(idAttribute)) {
                 if (metamodel.isEmbeddable(((AbstractAttribute) attribute).getBindableJavaType())) {
                     processEmbeddableAttribute(gaeEntity, entity, attribute, metamodel, metadata);
                 } else {
@@ -145,16 +155,18 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         // gaeEntity.setProperty("contactInfo", embeddedEntity);
     }
 
-    private void handleRelations(Entity gaeEntity, Object entity, EntityMetadata entityMetadata, List<RelationHolder> rlHolders) {
+    private void handleRelations(Entity gaeEntity, EntityMetadata entityMetadata, List<RelationHolder> rlHolders) {
         if (rlHolders != null && !rlHolders.isEmpty()) {
             for (RelationHolder rh : rlHolders) {
                 String jpaColumnName = rh.getRelationName();
                 String fieldName = entityMetadata.getFieldName(jpaColumnName);
+                Relation relation = entityMetadata.getRelation(fieldName);
                 String targetId = (String) rh.getRelationValue();
 
-                if (jpaColumnName != null && targetId != null) {
-                    System.out.println("field = [" + fieldName + "], jpaColumnName = [" + jpaColumnName + "], targetId = [" + targetId + "]");
-                    gaeEntity.setProperty(jpaColumnName, targetId);
+                if (relation != null && jpaColumnName != null && targetId != null) {
+                    Key targetKey = KeyFactory.createKey(relation.getTargetEntity().getSimpleName(), targetId);
+                    System.out.println("field = [" + fieldName + "], jpaColumnName = [" + jpaColumnName + "], targetKey = [" + targetKey + "]");
+                    gaeEntity.setProperty(jpaColumnName, targetKey);
                 }
             }
         }
@@ -179,7 +191,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
      *  -----------------------------------------------------------------------
      *  | EMPLOYEE_ID (joinColumnName)  |  PROJECT_ID (inverseJoinColumnName)  |
      *  -----------------------------------------------------------------------
-     *  |          id  (owner)          |             id (child)               |
+     *  |         key (owner)           |            key (child)               |
      *  -----------------------------------------------------------------------
      */
     @Override
@@ -191,13 +203,30 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         String inverseJoinColumnName = joinTableData.getInverseJoinColumnName();
         Map<Object, Set<Object>> joinTableRecords = joinTableData.getJoinTableRecords();
 
+        // TODO problem, not able to get classes from getColumnsById and findIdsByColumn
+        // Class ownerClass = joinTableData.getEntityClass();
+        // Class childClass = null;
+        // EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, ownerClass);
+        // for (Relation relation : entityMetadata.getRelations()) {
+        //     if (relation.isRelatedViaJoinTable() && relation.getJoinTableMetadata().getJoinTableName().equals(joinTableName)) {
+        //         childClass = relation.getTargetEntity();
+        //         break;
+        //     }
+        // }
+        // if (childClass == null) {
+        //     throw new KunderaException("Cannot find ManyToMany relation in " + ownerClass);
+        // }
+
         for (Object owner : joinTableRecords.keySet()) {
             Set<Object> children = joinTableRecords.get(owner);
-
+            //Key ownerKey = KeyFactory.createKey(ownerClass.getSimpleName(), (String) owner);
             for (Object child : children) {
+                //Key childKey = KeyFactory.createKey(childClass.getSimpleName(), (String) child);
                 /* let datastore generate ID for the entity */
                 Entity gaeEntity = new Entity(joinTableName);
+                // gaeEntity.setProperty(joinColumnName, ownerKey);
                 gaeEntity.setProperty(joinColumnName, owner);
+                // gaeEntity.setProperty(inverseJoinColumnName, childKey);
                 gaeEntity.setProperty(inverseJoinColumnName, child);
                 datastore.put(gaeEntity);
 
@@ -221,7 +250,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
             EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entityClass);
             Entity gaeEntity = get(entityMetadata.getTableName(), id);
             if (gaeEntity == null) {
-                // case not found
+                /* case not found */
                 return null;
             }
             System.out.println(gaeEntity);
@@ -240,7 +269,13 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
     private Entity get(String kind, Object id) {
         try {
-            Key key = KeyFactory.createKey(kind, (String) id);
+            Key key;
+            if (id instanceof Key) {
+                /* case id is field retrieved from datastore */
+                key = (Key) id;
+            } else {
+                key = KeyFactory.createKey(kind, (String) id);
+            }
             return datastore.get(key);
         } catch (EntityNotFoundException e) {
             System.out.println("\tNot found {kind = [" + kind + "], id = [" + id + "]}");
@@ -259,10 +294,15 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         Map<String, Object> relationMap = new HashMap<String, Object>();
         Object entity = entityMetadata.getEntityClazz().newInstance();
 
+        initializeID(entityMetadata, gaeEntity, entity);
         Set<Attribute> attributes = entityType.getAttributes();
         for (Attribute attribute : attributes) {
             if (!attribute.isAssociation()) {
-                initializeAttribute(gaeEntity, entity, attribute);
+                if (metamodel.isEmbeddable(((AbstractAttribute) attribute).getBindableJavaType())) {
+                    initializeEmbeddedAttribute(gaeEntity, entity, attribute, entityMetadata);
+                } else {
+                    initializeAttribute(gaeEntity, entity, attribute, entityMetadata);
+                }
             } else {
                 initializeRelation(gaeEntity, attribute, relationMap);
             }
@@ -272,14 +312,27 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         return new EnhanceEntity(entity, gaeEntity.getKey().getName(), relationMap.isEmpty() ? null : relationMap);
     }
 
-    private void initializeAttribute(Entity gaeEntity, Object entity, Attribute attribute) {
+    private void initializeID(EntityMetadata entityMetadata, Entity gaeEntity, Object entity) {
+        String jpaColumnName = ((AbstractAttribute) entityMetadata.getIdAttribute()).getJPAColumnName();
+        String id = gaeEntity.getKey().getName();
+        System.out.println("jpaColumnName = [" + jpaColumnName + "], fieldValue = [" + id + "]");
+        PropertyAccessorHelper.setId(entity, entityMetadata, id);
+    }
+
+    private void initializeAttribute(Entity gaeEntity, Object entity, Attribute attribute, EntityMetadata entityMetadata) {
         String jpaColumnName = ((AbstractAttribute) attribute).getJPAColumnName();
         Object fieldValue = gaeEntity.getProperties().get(jpaColumnName);
-        System.out.println("jpaColumnName = [" + jpaColumnName + "], fieldValue = [" + fieldValue + "]");
 
         if (jpaColumnName != null && fieldValue != null) {
+            System.out.println("jpaColumnName = [" + jpaColumnName + "], fieldValue = [" + fieldValue + "]");
             PropertyAccessorHelper.set(entity, (Field) attribute.getJavaMember(), fieldValue);
         }
+    }
+
+    private void initializeEmbeddedAttribute(Entity gaeEntity, Object entity, Attribute attribute, EntityMetadata entityMetadata) {
+        System.out.println("DatastoreClient.initializeEmbeddedAttribute");
+
+        // TODO fill embedded properties from embeddedEntity
     }
 
     private void initializeRelation(Entity gaeEntity, Attribute attribute, Map<String, Object> relationMap) {
@@ -297,7 +350,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("DatastoreClient.findAll");
         System.out.println("entityClass = [" + entityClass + "], columnsToSelect = [" + columnsToSelect + "], keys = [" + keys + "]");
 
-        // TODO review this
+        // TODO review this, use columnsToSelect
         // List results = new ArrayList();
         // for (Object key : keys) {
         //     Object object = this.find(entityClass, key);
@@ -312,7 +365,13 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     @Override
     public <E> List<E> find(Class<E> entityClass, Map<String, String> embeddedColumnMap) {
         System.out.println("DatastoreClient.find");
-        System.out.println("entityClass = [" + entityClass + "], embeddedColumnMap = [" + embeddedColumnMap + "]");
+        System.out.println("entityClass = [" + entityClass + "],");
+        String out = "embeddedColumnMap = [\n";
+        for (String key : embeddedColumnMap.keySet()) {
+            out += "\tkey = [" + key + "], value = [" + embeddedColumnMap.get(key) + "]\n";
+        }
+        out += "]";
+        System.out.println(out);
 
         // TODO Auto-generated method stub
         throw new NotImplementedException();
@@ -320,32 +379,39 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     }
 
     /*
-     * used to retrieve relation for OneToMany
-     * (ManyToOne inverse relation)
+     * used to retrieve relation for OneToMany (ManyToOne inverse relation),
+     * is supposed to retrieve the initialized objects.
+     *
+     * for example:
+     *      select * from EmployeeMTObis (entityClass)
+     *      where DEPARTMENT_ID (colName) equals (colValue)
      */
     @Override
-    public List<Object> findByRelation(String colName, Object colValue, Class entityClazz) {
+    public List<Object> findByRelation(String colName, Object colValue, Class entityClass) {
         System.out.println("DatastoreClient.findByRelation");
-        System.out.println("colName = [" + colName + "], colValue = [" + colValue + "], entityClazz = [" + entityClazz + "]");
+        System.out.println("colName = [" + colName + "], colValue = [" + colValue + "], entityClazz = [" + entityClass + "]");
 
-        Query q = new Query(entityClazz.getSimpleName())
-                .setFilter(new Query.FilterPredicate(colName,
-                        Query.FilterOperator.EQUAL,
-                        colValue)).setKeysOnly();
-        System.out.println("\n" + q + "\n");
+        EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entityClass);
+        String fieldName = entityMetadata.getFieldName(colName);
+        Relation relation = entityMetadata.getRelation(fieldName);
+        Key targetKey = KeyFactory.createKey(relation.getTargetEntity().getSimpleName(), (String) colValue);
+
+        Query q = generateQuery(entityClass.getSimpleName(), colName, targetKey);
+        q.setKeysOnly();
 
         List<Object> results = new ArrayList<Object>();
         List<Entity> entities = datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
         if (!entities.isEmpty()) {
             for (Entity entity : entities) {
-                results.add(find(entityClazz, entity.getKey().getName()));
+                results.add(find(entityClass, entity.getKey()));
             }
         }
         return results;
     }
 
     /*
-     * used to retrieve owner-side relation for ManyToMany
+     * used to retrieve owner-side relation for ManyToMany,
+     * is supposed to retrieve the objects id.
      *
      * for example:
      *      select PROJECT_ID (columnName) from EMPLOYEE_PROJECT (tableName)
@@ -357,11 +423,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("DatastoreClient.getColumnsById");
         System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], pKeyColumnName = [" + pKeyColumnName + "], columnName = [" + columnName + "], pKeyColumnValue = [" + pKeyColumnValue + "], columnJavaType = [" + columnJavaType + "]");
 
-        Query q = new Query(tableName)
-                .setFilter(new Query.FilterPredicate(pKeyColumnName,
-                        Query.FilterOperator.EQUAL,
-                        pKeyColumnValue));
-        System.out.println("\n" + q + "\n");
+        Query q = generateQuery(tableName, pKeyColumnName, pKeyColumnValue);
 
         List<E> results = new ArrayList<E>();
         List<Entity> entities = datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
@@ -389,7 +451,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     }
 
     /*
-     * used to retrieve target-side relation for ManyToMany
+     * used to retrieve target-side relation for ManyToMany,
+     * is supposed to retrieve the objects id.
      *
      * for example:
      *      select EMPLOYEE_ID (pKeyName) from EMPLOYEE_PROJECT (tableName)
@@ -401,11 +464,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("DatastoreClient.findIdsByColumn");
         System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], pKeyName = [" + pKeyName + "], columnName = [" + columnName + "], columnValue = [" + columnValue + "], entityClazz = [" + entityClazz + "]");
 
-        Query q = new Query(tableName)
-                .setFilter(new Query.FilterPredicate(columnName,
-                        Query.FilterOperator.EQUAL,
-                        columnValue));
-        System.out.println("\n" + q + "\n");
+        Query q = generateQuery(tableName, columnName, columnValue);
 
         List<Object> results = new ArrayList<Object>();
         List<Entity> entities = datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
@@ -448,11 +507,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("DatastoreClient.deleteByColumn");
         System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], columnName = [" + columnName + "], columnValue = [" + columnValue + "]");
 
-        Query q = new Query(tableName)
-                .setFilter(new Query.FilterPredicate(columnName,
-                        Query.FilterOperator.EQUAL,
-                        columnValue)).setKeysOnly();
-        System.out.println("\n" + q + "\n");
+        Query q = generateQuery(tableName, columnName, columnValue);
+        q.setKeysOnly();
 
         List<Entity> entities = datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
         if (!entities.isEmpty()) {
@@ -460,5 +516,14 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 datastore.delete(entity.getKey());
             }
         }
+    }
+
+    private Query generateQuery(String tableName, String columnName, Object columnValue) {
+        Query q = new Query(tableName)
+                .setFilter(new Query.FilterPredicate(columnName,
+                        Query.FilterOperator.EQUAL,
+                        columnValue));
+        System.out.println("\n" + q + "\n");
+        return q;
     }
 }
