@@ -1,6 +1,5 @@
 package it.polimi.client.datastore.entities;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -12,7 +11,7 @@ import java.util.List;
 @Data
 @NoArgsConstructor
 @Entity
-@Table(name = "SimpleAddressCollection", schema = "gae-test@pu")
+@Table(name = "AddressCollection", schema = "gae-test@pu")
 public class AddressCollection {
 
     @Id
@@ -27,5 +26,4 @@ public class AddressCollection {
         this.streets = new ArrayList<String>();
         Collections.addAll(this.streets, streets);
     }
-
 }

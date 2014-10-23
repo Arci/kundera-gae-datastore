@@ -2,8 +2,6 @@ package it.polimi.client.datastore.crud;
 
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
 import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
-import it.polimi.client.datastore.entities.Address;
-import it.polimi.client.datastore.entities.EmployeeEmbedded;
 import it.polimi.client.datastore.entities.PhoneEnum;
 import it.polimi.client.datastore.entities.PhoneType;
 import org.junit.After;
