@@ -23,5 +23,6 @@ public class EmployeeEmbedded {
     private Long salary;
 
     @Embedded
-    private Address embeddable;
+    @Column(name = "ADDRESS")
+    private Address address;
 }

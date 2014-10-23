@@ -1,34 +1,30 @@
 package it.polimi.client.datastore.entities;
 
-import lombok.Getter;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import lombok.ToString;
 
 import javax.persistence.*;
 import java.util.List;
 
+@Data
 @ToString(exclude = "employees")
+@EqualsAndHashCode(exclude = "employees")
 @NoArgsConstructor
 @Entity
 @Table(name = "DepartmentOTM", schema = "gae-test@pu")
 public class DepartmentOTM {
 
-    @Getter
-    @Setter
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column(name = "DEPARTMENT_ID")
     private String id;
 
-    @Getter
-    @Setter
     @Column(name = "NAME")
     private String name;
 
     /* a department employs many employees */
-    @Getter
-    @Setter
     @OneToMany(mappedBy = "department")
     private List<EmployeeMTObis> employees;
 }

@@ -116,4 +116,10 @@ public class DatastoreQuery extends QueryImpl {
         throw new NotImplementedException();
         // return null;
     }
+
+    @Override
+    protected List findUsingLucene(EntityMetadata entityMetadata, Client client) {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

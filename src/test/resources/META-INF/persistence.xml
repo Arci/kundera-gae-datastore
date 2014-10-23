@@ -5,6 +5,7 @@
     <persistence-unit name="pu">
         <provider>com.impetus.kundera.KunderaPersistence</provider>
         <class>it.polimi.client.datastore.entities.Address</class>
+        <class>it.polimi.client.datastore.entities.AddressCollection</class>
         <class>it.polimi.client.datastore.entities.Department</class>
         <class>it.polimi.client.datastore.entities.DepartmentOTM</class>
         <class>it.polimi.client.datastore.entities.Employee</class>

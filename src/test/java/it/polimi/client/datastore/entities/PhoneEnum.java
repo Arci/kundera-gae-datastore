@@ -19,7 +19,7 @@ public class PhoneEnum {
     @Column(name = "NUMBER")
     private Long number;
 
-    @Enumerated(EnumType.STRING)
     @Column(name = "TYPE_ENUM")
+    @Enumerated(EnumType.STRING)
     private PhoneType type;
 }

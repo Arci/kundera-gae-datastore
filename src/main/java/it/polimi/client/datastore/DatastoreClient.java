@@ -19,12 +19,14 @@ import com.impetus.kundera.persistence.EntityManagerFactoryImpl.KunderaMetadata;
 import com.impetus.kundera.persistence.EntityReader;
 import com.impetus.kundera.persistence.context.jointable.JoinTableData;
 import com.impetus.kundera.property.PropertyAccessorHelper;
+import com.impetus.kundera.property.accessor.EnumAccessor;
 import it.polimi.client.datastore.query.DatastoreQuery;
 import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.persistence.metamodel.Attribute;
+import javax.persistence.metamodel.EmbeddableType;
 import javax.persistence.metamodel.EntityType;
 import java.lang.reflect.Field;
 import java.util.*;
@@ -68,19 +70,22 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
     /* TODO decidere
      *
-     * 1. tutte le entity figlie di una root fittizia? per averle
-     * nello stesso entity group
+     * 1. check for unsupported types? o comunque intercettare
+     *    element collections e salvarle con la colonna per
+     *    indicare il tipo? non lo fanno le altre implementazioni, andrebbero
+     *    cambiare tutte le implementazioni che ci interessano
      *
+     * 2. test con string id e long id inseriti dall'utente
      *
-     * 2. settare indici per le query sui campi delle relazioni:
+     * 3. settare indici per le query sui campi delle relazioni:
      *      - quando si salvano (initializeRelations)
      *      - nelle due colonne delle joinTables (persistJoinTable)
+     *      - nelle embedded entities?
      *
-     * 3. test con string id e long id inseriti dall'utente
-     *
-     * 4. embedded entities (@Embedded)
-     *
-     * 5. element collections (@ElementCollection)
+     * 4. tutte le entity figlie di una root fittizia? per averle
+     *    nello stesso entity group --> magari impostarlo nelle config
+     *    per rendelo disponibile all'untete che più specificare anche il nome
+     *    della root entity
      *
      */
 
@@ -134,11 +139,19 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         }
     }
 
-    private void processAttribute(Entity gaeEntity, Object entity, Attribute attribute) {
+    private void processAttribute(PropertyContainer gaeEntity, Object entity, Attribute attribute) {
         Field field = (Field) attribute.getJavaMember();
         Object valueObj = PropertyAccessorHelper.getObject(entity, field);
         String jpaColumnName = ((AbstractAttribute) attribute).getJPAColumnName();
 
+        /* TODO
+         * @ElementCollection fields falls here thus are saved without further checks
+         */
+
+        //TODO maybe do something like this for every unsupported type
+        if (((Field) attribute.getJavaMember()).getType().isEnum()) {
+            valueObj = valueObj.toString();
+        }
         if (valueObj != null) {
             System.out.println("field = [" + field.getName() + "], jpaColumnName = [" + jpaColumnName + "], valueObj = [" + valueObj + "]");
             gaeEntity.setProperty(jpaColumnName, valueObj);
@@ -146,13 +159,18 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     }
 
     private void processEmbeddableAttribute(Entity gaeEntity, Object entity, Attribute attribute, MetamodelImpl metamodel, EntityMetadata metadata) {
-        System.out.println("DatastoreClient.processEmbeddableAttribute");
-        System.out.println("gaeEntity = [" + gaeEntity + "], entity = [" + entity + "], attribute = [" + attribute + "], metamodel = [" + metamodel + "], metadata = [" + metadata + "]");
+        Field field = (Field) attribute.getJavaMember();
+        String jpaColumnName = ((AbstractAttribute) attribute).getJPAColumnName();
+        Object embeddedObj = PropertyAccessorHelper.getObject(entity, field);
+        System.out.println("field = [" + field.getName() + "], jpaColumnName = [" + jpaColumnName + "], embeddedObj = [" + embeddedObj + "]");
 
-        // TODO fill embeddedEntity properties
-        // EmbeddedEntity embeddedEntity = new EmbeddedEntity();
-        // embeddedEntity.setProperty(...);
-        // gaeEntity.setProperty("contactInfo", embeddedEntity);
+        EmbeddedEntity embeddedEntity = new EmbeddedEntity();
+        EmbeddableType embeddable = metamodel.embeddable(((AbstractAttribute) attribute).getBindableJavaType());
+        Set<Attribute> embeddedAttributes = embeddable.getAttributes();
+        for (Attribute embeddedAttribute : embeddedAttributes) {
+            processAttribute(embeddedEntity, embeddedObj, embeddedAttribute);
+        }
+        gaeEntity.setProperty(jpaColumnName, embeddedEntity);
     }
 
     private void handleRelations(Entity gaeEntity, EntityMetadata entityMetadata, List<RelationHolder> rlHolders) {
@@ -299,9 +317,9 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         for (Attribute attribute : attributes) {
             if (!attribute.isAssociation()) {
                 if (metamodel.isEmbeddable(((AbstractAttribute) attribute).getBindableJavaType())) {
-                    initializeEmbeddedAttribute(gaeEntity, entity, attribute, entityMetadata);
+                    initializeEmbeddedAttribute(gaeEntity, entity, attribute, metamodel);
                 } else {
-                    initializeAttribute(gaeEntity, entity, attribute, entityMetadata);
+                    initializeAttribute(gaeEntity, entity, attribute);
                 }
             } else {
                 initializeRelation(gaeEntity, attribute, relationMap);
@@ -319,20 +337,35 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         PropertyAccessorHelper.setId(entity, entityMetadata, id);
     }
 
-    private void initializeAttribute(Entity gaeEntity, Object entity, Attribute attribute, EntityMetadata entityMetadata) {
+    private void initializeAttribute(PropertyContainer gaeEntity, Object entity, Attribute attribute) {
         String jpaColumnName = ((AbstractAttribute) attribute).getJPAColumnName();
         Object fieldValue = gaeEntity.getProperties().get(jpaColumnName);
 
+        if (((Field) attribute.getJavaMember()).getType().isEnum()) {
+            EnumAccessor accessor = new EnumAccessor();
+            fieldValue = accessor.fromString(((AbstractAttribute) attribute).getBindableJavaType(), fieldValue.toString());
+        }
         if (jpaColumnName != null && fieldValue != null) {
             System.out.println("jpaColumnName = [" + jpaColumnName + "], fieldValue = [" + fieldValue + "]");
             PropertyAccessorHelper.set(entity, (Field) attribute.getJavaMember(), fieldValue);
         }
     }
 
-    private void initializeEmbeddedAttribute(Entity gaeEntity, Object entity, Attribute attribute, EntityMetadata entityMetadata) {
-        System.out.println("DatastoreClient.initializeEmbeddedAttribute");
+    private void initializeEmbeddedAttribute(Entity gaeEntity, Object entity, Attribute attribute, MetamodelImpl metamodel) throws IllegalAccessException, InstantiationException {
+        String jpaColumnName = ((AbstractAttribute) attribute).getJPAColumnName();
+        EmbeddedEntity embeddedEntity = (EmbeddedEntity) gaeEntity.getProperties().get(jpaColumnName);
 
-        // TODO fill embedded property from embeddedEntity
+        if (jpaColumnName != null && embeddedEntity != null) {
+            System.out.println("jpaColumnName = [" + jpaColumnName + "], embeddedEntity = [" + embeddedEntity + "]");
+
+            EmbeddableType embeddable = metamodel.embeddable(((AbstractAttribute) attribute).getBindableJavaType());
+            Object embeddedObj = embeddable.getJavaType().newInstance();
+            Set<Attribute> embeddedAttributes = embeddable.getAttributes();
+            for (Attribute embeddedAttribute : embeddedAttributes) {
+                initializeAttribute(embeddedEntity, embeddedObj, embeddedAttribute);
+            }
+            PropertyAccessorHelper.set(entity, (Field) attribute.getJavaMember(), embeddedObj);
+        }
     }
 
     private void initializeRelation(Entity gaeEntity, Attribute attribute, Map<String, Object> relationMap) {
