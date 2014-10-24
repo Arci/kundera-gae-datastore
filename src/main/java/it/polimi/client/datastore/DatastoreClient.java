@@ -21,6 +21,7 @@ import com.impetus.kundera.persistence.context.jointable.JoinTableData;
 import com.impetus.kundera.property.PropertyAccessorHelper;
 import com.impetus.kundera.property.accessor.EnumAccessor;
 import it.polimi.client.datastore.query.DatastoreQuery;
+import it.polimi.client.datastore.query.QueryBuilder;
 import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,14 +78,22 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
      *
      * 2. test con string id e long id inseriti dall'utente
      *
+     * 3. chiedere sul gruppo:
+     *      - semantica di:
+     *          -  public <E> List<E> find(Class<E> entityClass, Map<String, String> embeddedColumnMap)
+     *          -  public <E> List<E> findAll(Class<E> entityClass, String[] columnsToSelect, Object... keys)
+     *      - se è possibile recuperare entityMetadata da joinTableName
+     *
      * 3. settare indici per le query sui campi delle relazioni:
      *      - quando si salvano (initializeRelations)
      *      - nelle due colonne delle joinTables (persistJoinTable)
      *      - nelle embedded entities?
+     *    magari usare annotation, dovrebbe essere possibile, dato il field, recuperare le sue annotation.
+     *    Per settare indici setProperty(), altrimenti setUnindexedProperty()
      *
      * 4. tutte le entity figlie di una root fittizia? per averle
      *    nello stesso entity group --> magari impostarlo nelle config
-     *    per rendelo disponibile all'untete che più specificare anche il nome
+     *    per rendelo disponibile all'untete che piò specificare anche il nome
      *    della root entity
      *
      */
@@ -148,7 +157,6 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
          * @ElementCollection fields falls here thus are saved without further checks
          */
 
-        //TODO maybe do something like this for every unsupported type
         if (((Field) attribute.getJavaMember()).getType().isEnum()) {
             valueObj = valueObj.toString();
         }
@@ -301,7 +309,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         }
     }
 
-    private Object initializeEntity(Entity gaeEntity, Class entityClass) throws IllegalAccessException, InstantiationException, ClassNotFoundException {
+    private EnhanceEntity initializeEntity(Entity gaeEntity, Class entityClass) throws IllegalAccessException, InstantiationException, ClassNotFoundException {
         System.out.println("DatastoreClient.initializeEntity");
 
         EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entityClass);
@@ -429,7 +437,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         Relation relation = entityMetadata.getRelation(fieldName);
         Key targetKey = KeyFactory.createKey(relation.getTargetEntity().getSimpleName(), (String) colValue);
 
-        Query q = generateQuery(entityClass.getSimpleName(), colName, targetKey);
+        Query q = generateRelationQuery(entityClass.getSimpleName(), colName, targetKey);
         q.setKeysOnly();
 
         List<Object> results = new ArrayList<Object>();
@@ -456,7 +464,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("DatastoreClient.getColumnsById");
         System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], pKeyColumnName = [" + pKeyColumnName + "], columnName = [" + columnName + "], pKeyColumnValue = [" + pKeyColumnValue + "], columnJavaType = [" + columnJavaType + "]");
 
-        Query q = generateQuery(tableName, pKeyColumnName, pKeyColumnValue);
+        Query q = generateRelationQuery(tableName, pKeyColumnName, pKeyColumnValue);
 
         List<E> results = new ArrayList<E>();
         List<Entity> entities = datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
@@ -497,7 +505,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("DatastoreClient.findIdsByColumn");
         System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], pKeyName = [" + pKeyName + "], columnName = [" + columnName + "], columnValue = [" + columnValue + "], entityClazz = [" + entityClazz + "]");
 
-        Query q = generateQuery(tableName, columnName, columnValue);
+        Query q = generateRelationQuery(tableName, columnName, columnValue);
 
         List<Object> results = new ArrayList<Object>();
         List<Entity> entities = datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
@@ -540,7 +548,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("DatastoreClient.deleteByColumn");
         System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], columnName = [" + columnName + "], columnValue = [" + columnValue + "]");
 
-        Query q = generateQuery(tableName, columnName, columnValue);
+        Query q = generateRelationQuery(tableName, columnName, columnValue);
         q.setKeysOnly();
 
         List<Entity> entities = datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
@@ -551,12 +559,34 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         }
     }
 
-    private Query generateQuery(String tableName, String columnName, Object columnValue) {
-        Query q = new Query(tableName)
+    private Query generateRelationQuery(String tableName, String columnName, Object columnValue) {
+        Query query = new Query(tableName)
                 .setFilter(new Query.FilterPredicate(columnName,
                         Query.FilterOperator.EQUAL,
                         columnValue));
-        System.out.println("\n" + q + "\n");
-        return q;
+        System.out.println("\n" + query + "\n");
+        return query;
+    }
+
+    public List<Object> executeQuery(QueryBuilder builder) {
+        System.out.println("DatastoreClient.executeQuery");
+        System.out.println("\n" + builder.getQuery() + "\n");
+
+        List<Object> results = new ArrayList<Object>();
+        List<Entity> entities = datastore.prepare(builder.getQuery()).asList(FetchOptions.Builder.withDefaults());
+        for (Entity entity : entities) {
+            System.out.println(entity);
+            try {
+                EnhanceEntity ee = initializeEntity(entity, builder.getEntityClass());
+                results.add(ee.getEntity());
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+        return results;
     }
 }

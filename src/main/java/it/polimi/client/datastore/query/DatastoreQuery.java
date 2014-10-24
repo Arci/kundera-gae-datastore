@@ -1,17 +1,21 @@
 package it.polimi.client.datastore.query;
 
 import com.impetus.kundera.client.Client;
+import com.impetus.kundera.metadata.KunderaMetadataManager;
 import com.impetus.kundera.metadata.model.EntityMetadata;
+import com.impetus.kundera.metadata.model.MetamodelImpl;
 import com.impetus.kundera.persistence.EntityManagerFactoryImpl;
 import com.impetus.kundera.persistence.EntityReader;
 import com.impetus.kundera.persistence.PersistenceDelegator;
 import com.impetus.kundera.query.KunderaQuery;
 import com.impetus.kundera.query.QueryImpl;
+import it.polimi.client.datastore.DatastoreClient;
 import it.polimi.client.datastore.DatastoreEntityReader;
 import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.persistence.metamodel.EntityType;
 import java.util.Iterator;
 import java.util.List;
 
@@ -22,15 +26,6 @@ import java.util.List;
 public class DatastoreQuery extends QueryImpl {
 
     private static Logger logger = LoggerFactory.getLogger(DatastoreQuery.class);
-    private DatastoreEntityReader reader;
-
-     /*
-     * TODO
-     *
-     * verificare se Client.findAll e Client.find(...., embeddedColumnMap)
-     * vengono chiamate da qui o da superclasse (QueryImpl)
-     *
-     */
 
     /**
      * Instantiates a new query impl.
@@ -59,12 +54,10 @@ public class DatastoreQuery extends QueryImpl {
     @Override
     protected List<Object> populateEntities(EntityMetadata m, Client client) {
         System.out.println("DatastoreQuery.populateEntities");
-        System.out.println("m = [" + m + "], client = [" + client + "]");
-        System.out.println("kunderaQuery = [" + this.kunderaQuery + "]");
+        printQuery();
 
-        // TODO Auto-generated method stub
-        throw new NotImplementedException();
-        // return null;
+        QueryBuilder builder = translateQuery(this.kunderaQuery);
+        return ((DatastoreClient) client).executeQuery(builder);
     }
 
     /**
@@ -73,38 +66,33 @@ public class DatastoreQuery extends QueryImpl {
     @Override
     protected List<Object> recursivelyPopulateEntities(EntityMetadata m, Client client) {
         System.out.println("DatastoreQuery.recursivelyPopulateEntities");
-        System.out.println("m = [" + m + "], client = [" + client + "]");
-        System.out.println("kunderaQuery = [" + this.kunderaQuery + "]");
 
-        //return setRelationEntities(queryResults, client, m);
-        // TODO Auto-generated method stub
-        throw new NotImplementedException();
-        // return null;
+        List<Object> queryResults = populateEntities(m, client);
+        return setRelationEntities(queryResults, client, m);
     }
 
-    /**
-     * This method is called by Kundera when executeUpdate method is invoked on query instance that
-     * represents update/ delete query. Your responsibility would be to call appropriate methods of client.
-     */
     /*
-     * used for update and delete queries
+     * used for update and delete queries, called on method executeUpdate()
      */
     @Override
     protected int onExecuteUpdate() {
         System.out.println("DatastoreQuery.onExecuteUpdate");
-        System.out.println("kunderaQuery = [" + this.kunderaQuery + "]");
+        printQuery();
 
-        /*
-         * TODO decide
-         *
-         * delete all and re-insert
-         * return onUpdateDeleteEvent();
-         *
-         * or
-         * super.onDeleteOrUpdate(queryResults);
-         */
-        throw new NotImplementedException();
-        // return 0;
+        return onUpdateDeleteEvent();
+    }
+
+    private QueryBuilder translateQuery(KunderaQuery kunderaQuery) {
+        EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, kunderaQuery.getEntityClass());
+        MetamodelImpl metaModel = (MetamodelImpl) kunderaMetadata.getApplicationMetadata().getMetamodel(
+                entityMetadata.getPersistenceUnit());
+        EntityType entityType = metaModel.entity(entityMetadata.getEntityClazz());
+
+        QueryBuilder builder = new QueryBuilder(entityMetadata, entityType);
+        builder.setFrom(kunderaQuery.getEntityClass())
+                .addFilters(kunderaQuery.getFilterClauseQueue())
+                .addOrdering(kunderaQuery.getOrdering());
+        return builder;
     }
 
     @Override
@@ -119,7 +107,72 @@ public class DatastoreQuery extends QueryImpl {
 
     @Override
     protected List findUsingLucene(EntityMetadata entityMetadata, Client client) {
-        // TODO Auto-generated method stub
-        return null;
+        throw new UnsupportedOperationException("findUsingLucene is currently unsupported for this client");
+    }
+
+    private void printQuery() {
+        System.out.println("kunderaQuery = [\n\t" +
+                "from = " + this.kunderaQuery.getFrom() + "\n\t" +
+                "entityClass = " + this.kunderaQuery.getEntityClass() + "\n\t" +
+                "entityAlias = " + this.kunderaQuery.getEntityAlias() + "\n\t" +
+                "filter = " + this.kunderaQuery.getFilter() + "\n\t" +
+                "ordering = " + orderingString() + "\n\t" +
+                "parameters = " + this.kunderaQuery.getParameters() + "\n\t" +
+                "isNative = " + this.kunderaQuery.isNative() + "\n\t" +
+                "isDeleteUpdate = " + this.kunderaQuery.isDeleteUpdate() + "\n\t" +
+                "getResult = " + resultString() + "\n\t" +
+                "updateQueue = " + updateClauseQueueString() + "\n\t" +
+                "filterQueue = " + this.kunderaQuery.getFilterClauseQueue() + "\n]\n");
+    }
+
+    private String resultString() {
+        String results = "[";
+        if (this.kunderaQuery.getResult() != null) {
+            for (String res : this.kunderaQuery.getResult()) {
+                results += "\n\t\t" + res;
+            }
+            results += "\n\t";
+        }
+        results += "]";
+        return results;
+    }
+
+    private String updateClauseQueueString() {
+        String results = "[";
+        Iterator<KunderaQuery.UpdateClause> clauseIterator = this.kunderaQuery.getUpdateClauseQueue().iterator();
+        while (clauseIterator.hasNext()) {
+            KunderaQuery.UpdateClause updateClause = clauseIterator.next();
+            results += "UpdateClause [";
+            results += "property=" + updateClause.getProperty();
+            results += ", value=" + updateClause.getValue();
+            if (clauseIterator.hasNext()) {
+                results += "], ";
+            } else {
+                results += "]";
+            }
+        }
+        results += "]";
+        return results;
+    }
+
+    private String orderingString() {
+        String results = "[";
+        if (this.kunderaQuery.getOrdering() != null) {
+            Iterator<KunderaQuery.SortOrdering> orderingIterator = this.kunderaQuery.getOrdering().iterator();
+            while (orderingIterator.hasNext()) {
+                KunderaQuery.SortOrdering sortOrdering = orderingIterator.next();
+                results += "SortOrdering [";
+                results += "property=" + sortOrdering.getColumnName();
+                results += ", value=" + sortOrdering.getOrder();
+                if (orderingIterator.hasNext()) {
+                    results += "], ";
+                } else {
+                    results += "]";
+                }
+            }
+            results += "]";
+            return results;
+        }
+        return "[]";
     }
 }
