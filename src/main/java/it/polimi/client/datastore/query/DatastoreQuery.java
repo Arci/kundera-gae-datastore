@@ -56,7 +56,7 @@ public class DatastoreQuery extends QueryImpl {
         System.out.println("DatastoreQuery.populateEntities");
         printQuery();
 
-        QueryBuilder builder = translateQuery(this.kunderaQuery);
+        QueryBuilder builder = translateQuery(this.kunderaQuery, false);
         return ((DatastoreClient) client).executeQuery(builder);
     }
 
@@ -66,8 +66,10 @@ public class DatastoreQuery extends QueryImpl {
     @Override
     protected List<Object> recursivelyPopulateEntities(EntityMetadata m, Client client) {
         System.out.println("DatastoreQuery.recursivelyPopulateEntities");
+        printQuery();
 
-        List<Object> queryResults = populateEntities(m, client);
+        QueryBuilder builder = translateQuery(this.kunderaQuery, true);
+        List<Object> queryResults = ((DatastoreClient) client).executeQuery(builder);
         return setRelationEntities(queryResults, client, m);
     }
 
@@ -82,13 +84,13 @@ public class DatastoreQuery extends QueryImpl {
         return onUpdateDeleteEvent();
     }
 
-    private QueryBuilder translateQuery(KunderaQuery kunderaQuery) {
+    private QueryBuilder translateQuery(KunderaQuery kunderaQuery, boolean holdRelationships) {
         EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, kunderaQuery.getEntityClass());
         MetamodelImpl metaModel = (MetamodelImpl) kunderaMetadata.getApplicationMetadata().getMetamodel(
                 entityMetadata.getPersistenceUnit());
         EntityType entityType = metaModel.entity(entityMetadata.getEntityClazz());
 
-        QueryBuilder builder = new QueryBuilder(entityMetadata, entityType);
+        QueryBuilder builder = new QueryBuilder(entityMetadata, entityType, holdRelationships);
         builder.setFrom(kunderaQuery.getEntityClass())
                 .addFilters(kunderaQuery.getFilterClauseQueue())
                 .addOrdering(kunderaQuery.getOrdering());

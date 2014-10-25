@@ -6,6 +6,7 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 import com.impetus.kundera.KunderaException;
 import com.impetus.kundera.metadata.model.EntityMetadata;
+import com.impetus.kundera.metadata.model.Relation;
 import com.impetus.kundera.metadata.model.attributes.AbstractAttribute;
 import com.impetus.kundera.query.KunderaQuery;
 
@@ -21,10 +22,12 @@ public class QueryBuilder {
 
     private Query query;
     private String kind;
+    private boolean withRelations;
     private final EntityMetadata entityMetadata;
     private final EntityType entityType;
 
-    public QueryBuilder(EntityMetadata entityMetadata, EntityType entityType) {
+    public QueryBuilder(EntityMetadata entityMetadata, EntityType entityType, boolean holdRelationships) {
+        this.withRelations = holdRelationships;
         this.entityMetadata = entityMetadata;
         this.entityType = entityType;
         this.kind = getEntityClass().getSimpleName();
@@ -41,6 +44,10 @@ public class QueryBuilder {
 
     public String getKind() {
         return this.kind;
+    }
+
+    public Boolean holdRelationships() {
+        return this.withRelations;
     }
 
     public QueryBuilder setFrom(Class entityClass) {
@@ -120,15 +127,22 @@ public class QueryBuilder {
         Query.FilterOperator operator = parseCondition(filterClause.getCondition());
         String property = filterClause.getProperty();
 
-        Query.Filter propertyFilter;
-        boolean isIdClause = property.equals(((AbstractAttribute) entityMetadata.getIdAttribute()).getJPAColumnName());
-        if (isIdClause) {
+        String idColumnName = ((AbstractAttribute) entityMetadata.getIdAttribute()).getJPAColumnName();
+        String filedName = entityMetadata.getFieldName(property);
+        if (entityType.getAttribute(filedName).isAssociation()) {
+            /* filter on related entity */
+            Relation relation = entityMetadata.getRelation(filedName);
+            String targetKind = relation.getTargetEntity().getSimpleName();
+            Key key = KeyFactory.createKey(targetKind, (String) filterValue);
+            return new Query.FilterPredicate(property, operator, key);
+        } else if (property.equals(idColumnName)) {
+            /* filter on entity ID */
             Key key = KeyFactory.createKey(this.kind, (String) filterValue);
-            propertyFilter = new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, operator, key);
+            return new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, operator, key);
         } else {
-            propertyFilter = new Query.FilterPredicate(property, operator, filterValue);
+            /* filter on entity filed */
+            return new Query.FilterPredicate(property, operator, filterValue);
         }
-        return propertyFilter;
     }
 
     private Query.FilterOperator parseCondition(String condition) {

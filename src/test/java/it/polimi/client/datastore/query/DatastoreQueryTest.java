@@ -2,7 +2,7 @@ package it.polimi.client.datastore.query;
 
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
 import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
-import it.polimi.client.datastore.entities.Employee;
+import it.polimi.client.datastore.entities.*;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -79,6 +79,8 @@ public class DatastoreQueryTest {
         }
         Assert.assertEquals(0, toCheck);
 
+        clear();
+
         print("where clause");
         query = em.createQuery("SELECT e FROM Employee e WHERE e.id = :id");
         Employee foundEmployee = (Employee) query.setParameter("id", emp1Id).getSingleResult();
@@ -87,6 +89,8 @@ public class DatastoreQueryTest {
         Assert.assertEquals("Fabio", foundEmployee.getName());
         Assert.assertEquals((Long) 123L, foundEmployee.getSalary());
 
+        clear();
+
         print("complex where clause");
         query = em.createQuery("SELECT e FROM Employee e WHERE e.name = :n AND e.salary = :s");
         foundEmployee = (Employee) query.setParameter("n", "Crizia").setParameter("s", 456L).getSingleResult();
@@ -94,6 +98,10 @@ public class DatastoreQueryTest {
         Assert.assertEquals(emp2Id, foundEmployee.getId());
         Assert.assertEquals("Crizia", foundEmployee.getName());
         Assert.assertEquals((Long) 456L, foundEmployee.getSalary());
+
+        // TODO query over embedded, element collections and enums ?
+
+        clear();
 
         print("order by clause");
         query = em.createQuery("SELECT e FROM Employee e ORDER BY e.name");
