@@ -48,8 +48,8 @@ public class DatastoreQuery extends QueryImpl {
         /* do nothing, nothing to close */
     }
 
-    /**
-     * This method would be called by Kundera to populate entities while it doesn't hold any relationships.
+    /*
+     * called by Kundera to populate entities without any relationships.
      */
     @Override
     protected List<Object> populateEntities(EntityMetadata m, Client client) {
@@ -60,8 +60,8 @@ public class DatastoreQuery extends QueryImpl {
         return ((DatastoreClient) client).executeQuery(builder);
     }
 
-    /**
-     * This method would be called by Kundera to populate entities while it holds relationships.
+    /*
+     * called by Kundera to populate entities while they holds relationships.
      */
     @Override
     protected List<Object> recursivelyPopulateEntities(EntityMetadata m, Client client) {
@@ -124,7 +124,8 @@ public class DatastoreQuery extends QueryImpl {
                 "parameters = " + this.kunderaQuery.getParameters() + "\n\t" +
                 "isNative = " + this.kunderaQuery.isNative() + "\n\t" +
                 "isDeleteUpdate = " + this.kunderaQuery.isDeleteUpdate() + "\n\t" +
-                "columnsToSelect = " + resultString() + "\n\t" +
+                "getResults = " + resultString() + "\n\t" +
+                "columnsToSelect = " + columnsString() + "\n\t" +
                 "updateQueue = " + updateClauseQueueString() + "\n\t" +
                 "filterQueue = " + this.kunderaQuery.getFilterClauseQueue() + "\n]\n");
     }
@@ -132,11 +133,28 @@ public class DatastoreQuery extends QueryImpl {
     private String resultString() {
         String results = "[";
         if (this.kunderaQuery.getResult() != null) {
-            EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, kunderaQuery.getEntityClass());
-            for (String res : super.getColumns(this.kunderaQuery.getResult(), entityMetadata)) {
+            for (String res : this.kunderaQuery.getResult()) {
                 results += "\n\t\t" + res;
             }
             results += "\n\t";
+        }
+        results += "]";
+        return results;
+    }
+
+    private String columnsString() {
+        String results = "[";
+        if (this.kunderaQuery.getResult() != null) {
+            EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, kunderaQuery.getEntityClass());
+            String[] columns = super.getColumns(this.kunderaQuery.getResult(), entityMetadata);
+            if (columns.length != 0) {
+                for (String res : columns) {
+                    results += "\n\t\t" + res;
+                }
+                results += "\n\t";
+            } else {
+                results += "*";
+            }
         }
         results += "]";
         return results;

@@ -84,7 +84,7 @@ public class QueryOTOTest {
 
         print("select by inner filed");
         query = em.createQuery("SELECT e FROM EmployeeOTO e WHERE e.phone = :pid", EmployeeOTO.class);
-        EmployeeOTO foundEmployee = (EmployeeOTO) query.setParameter("pid", phnId).getSingleResult();
+        EmployeeOTO foundEmployee = query.setParameter("pid", phnId).getSingleResult();
         Assert.assertNotNull(foundEmployee.getId());
         Assert.assertNotNull(foundEmployee.getPhone());
         Assert.assertEquals(empId, foundEmployee.getId());

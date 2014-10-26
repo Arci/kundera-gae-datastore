@@ -3,6 +3,8 @@ package it.polimi.client.datastore.query;
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
 import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
 import it.polimi.client.datastore.entities.Employee;
+import it.polimi.client.datastore.entities.PhoneEnum;
+import it.polimi.client.datastore.entities.PhoneType;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -52,6 +54,12 @@ public class DatastoreQueryTest {
         employee2.setSalary(456L);
         em.persist(employee2);
 
+        PhoneEnum phone = new PhoneEnum();
+        phone.setNumber(123L);
+        phone.setType(PhoneType.HOME);
+        em.persist(phone);
+
+        String phnId = phone.getId();
         String emp1Id = employee1.getId();
         String emp2Id = employee2.getId();
         clear();
@@ -106,7 +114,15 @@ public class DatastoreQueryTest {
         Assert.assertEquals("Crizia", foundEmployee.getName());
         Assert.assertEquals((Long) 456L, foundEmployee.getSalary());
 
-        // TODO query over embedded, element collections and enums ?
+        clear();
+
+        print("where over enumerated");
+        TypedQuery<PhoneEnum> enumQuery = em.createQuery("SELECT p FROM PhoneEnum p WHERE p.type = :type", PhoneEnum.class);
+        PhoneEnum foundPhone = enumQuery.setParameter("type", PhoneType.HOME.toString()).getSingleResult();
+        Assert.assertNotNull(foundPhone);
+        Assert.assertEquals(phnId, foundPhone.getId());
+        Assert.assertEquals((Long) 123L, foundPhone.getNumber());
+        Assert.assertEquals(PhoneType.HOME, foundPhone.getType());
 
         clear();
 
