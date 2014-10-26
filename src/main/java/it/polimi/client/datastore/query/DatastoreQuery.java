@@ -91,7 +91,9 @@ public class DatastoreQuery extends QueryImpl {
         EntityType entityType = metaModel.entity(entityMetadata.getEntityClazz());
 
         QueryBuilder builder = new QueryBuilder(entityMetadata, entityType, holdRelationships);
+
         builder.setFrom(kunderaQuery.getEntityClass())
+                .addProjections(super.getColumns(kunderaQuery.getResult(), entityMetadata))
                 .addFilters(kunderaQuery.getFilterClauseQueue())
                 .addOrderings(kunderaQuery.getOrdering());
         return builder;
@@ -122,7 +124,7 @@ public class DatastoreQuery extends QueryImpl {
                 "parameters = " + this.kunderaQuery.getParameters() + "\n\t" +
                 "isNative = " + this.kunderaQuery.isNative() + "\n\t" +
                 "isDeleteUpdate = " + this.kunderaQuery.isDeleteUpdate() + "\n\t" +
-                "getResult = " + resultString() + "\n\t" +
+                "columnsToSelect = " + resultString() + "\n\t" +
                 "updateQueue = " + updateClauseQueueString() + "\n\t" +
                 "filterQueue = " + this.kunderaQuery.getFilterClauseQueue() + "\n]\n");
     }
@@ -130,7 +132,8 @@ public class DatastoreQuery extends QueryImpl {
     private String resultString() {
         String results = "[";
         if (this.kunderaQuery.getResult() != null) {
-            for (String res : this.kunderaQuery.getResult()) {
+            EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, kunderaQuery.getEntityClass());
+            for (String res : super.getColumns(this.kunderaQuery.getResult(), entityMetadata)) {
                 results += "\n\t\t" + res;
             }
             results += "\n\t";

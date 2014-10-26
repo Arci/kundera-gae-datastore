@@ -575,12 +575,22 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
             System.out.println(entity);
             try {
                 EnhanceEntity ee = initializeEntity(entity, builder.getEntityClass());
-                if (!builder.holdRelationships()) {
-                    /* comes from DatastoreQuery.populateEntities */
-                    results.add(ee.getEntity());
+                if (!builder.isProjectionQuery()) {
+                    if (!builder.holdRelationships()) {
+                        /* comes from DatastoreQuery.populateEntities */
+                        results.add(ee.getEntity());
+                    } else {
+                        /* comes from DatastoreQuery.recursivelyPopulateEntities */
+                        results.add(ee);
+                    }
                 } else {
-                    /* comes from DatastoreQuery.recursivelyPopulateEntities */
-                    results.add(ee);
+                    for (String column : builder.getProjections()) {
+                        if (entity.hasProperty(column)) {
+                            results.add(entity.getProperty(column));
+                        } else {
+                            throw new KunderaException("Entity [" + entity.getKind() + "] does not contains property [" + column + "]");
+                        }
+                    }
                 }
             } catch (IllegalAccessException e) {
                 e.printStackTrace();

@@ -8,10 +8,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-import javax.persistence.TypedQuery;
+import javax.persistence.*;
 import java.util.List;
 
 /**
@@ -78,6 +75,16 @@ public class DatastoreQueryTest {
             }
         }
         Assert.assertEquals(0, toCheck);
+
+        clear();
+
+        print("select property");
+        Query projection = em.createQuery("SELECT e.name, e.salary FROM Employee e WHERE e.id = :id");
+        List results = projection.setParameter("id", emp1Id).getResultList();
+        Assert.assertTrue(results.size() == 2);
+        for (Object property : results) {
+            Assert.assertTrue(property.equals("Fabio") || property.equals(123L));
+        }
 
         clear();
 

@@ -1,9 +1,6 @@
 package it.polimi.client.datastore.query;
 
-import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.Key;
-import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.*;
 import com.impetus.kundera.KunderaException;
 import com.impetus.kundera.metadata.model.EntityMetadata;
 import com.impetus.kundera.metadata.model.Relation;
@@ -12,8 +9,7 @@ import com.impetus.kundera.query.KunderaQuery;
 
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EntityType;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 
 /**
  * @author Fabio Arcidiacono.
@@ -23,15 +19,18 @@ public class QueryBuilder {
     private Query query;
     private String kind;
     private boolean holdRelationships;
+    private boolean isProjectionQuery;
+    private Map<String, Class> projections;
     private final EntityMetadata entityMetadata;
     private final EntityType entityType;
 
     public QueryBuilder(EntityMetadata entityMetadata, EntityType entityType, boolean holdRelationships) {
-        this.holdRelationships = holdRelationships;
         this.entityMetadata = entityMetadata;
         this.entityType = entityType;
         this.kind = getEntityClass().getSimpleName();
-        this.query = new Query(this.kind);
+        this.holdRelationships = holdRelationships;
+        this.isProjectionQuery = false;
+        this.projections = new HashMap<String, Class>();
     }
 
     public Query getQuery() {
@@ -42,12 +41,16 @@ public class QueryBuilder {
         return this.entityMetadata.getEntityClazz();
     }
 
-    public String getKind() {
-        return this.kind;
+    public boolean holdRelationships() {
+        return this.holdRelationships;
     }
 
-    public Boolean holdRelationships() {
-        return this.holdRelationships;
+    public boolean isProjectionQuery() {
+        return this.isProjectionQuery;
+    }
+
+    public Set<String> getProjections() {
+        return this.projections.keySet();
     }
 
     public QueryBuilder setFrom(Class entityClass) {
@@ -55,8 +58,26 @@ public class QueryBuilder {
         return this;
     }
 
-    public QueryBuilder setKeysOnly() {
-        this.query.setKeysOnly();
+    public QueryBuilder addProjections(String[] columns) {
+        if (columns.length != 0) {
+            this.isProjectionQuery = true;
+            for (String column : columns) {
+                try {
+                    String filedName = entityMetadata.getFieldName(column);
+                    Attribute attribute = entityType.getAttribute(filedName);
+                    addProjection(column, attribute.getJavaType());
+                } catch (NullPointerException npe) {
+                    /* case attribute not found */
+                    throw new KunderaException("Cannot find Java type for  [" + column + "]");
+                }
+            }
+        }
+        return this;
+    }
+
+    public QueryBuilder addProjection(String column, Class columnType) {
+        this.projections.put(column, columnType);
+        this.query.addProjection(new PropertyProjection(column, columnType));
         return this;
     }
 
