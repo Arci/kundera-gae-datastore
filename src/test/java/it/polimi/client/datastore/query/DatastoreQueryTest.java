@@ -41,7 +41,7 @@ public class DatastoreQueryTest {
         helper.tearDown();
     }
 
-    @Test
+    //@Test
     public void testSelectQuery() {
         print("create");
         Employee employee1 = new Employee();
@@ -139,7 +139,7 @@ public class DatastoreQueryTest {
         Assert.assertTrue(allEmployees.get(1).getSalary().equals(123L));
     }
 
-    //@Test
+    @Test
     public void testUpdateDeleteQuery() {
         print("create");
         Employee employee = new Employee();
@@ -151,20 +151,20 @@ public class DatastoreQueryTest {
         clear();
 
         print("update");
-        TypedQuery<Employee> query = em.createQuery("UPDATE Employee SET salary = :s WHERE name = :n", Employee.class);
-        int updated = query.setParameter("s", 789L).setParameter("n", "Pippo").executeUpdate();
+        TypedQuery<Employee> query = em.createQuery("UPDATE Employee SET salary = :s, name =:n2 WHERE name = :n", Employee.class);
+        int updated = query.setParameter("s", 789L).setParameter("n2", "Pippo").setParameter("n", "Fabio").executeUpdate();
         Assert.assertEquals(1, updated);
 
         query = em.createQuery("SELECT e FROM Employee e WHERE e.id = :id", Employee.class);
         Employee foundEmployee = query.setParameter("id", emp1Id).getSingleResult();
         Assert.assertNotNull(foundEmployee);
-        Assert.assertEquals(emp1Id, foundEmployee.getName());
+        Assert.assertEquals(emp1Id, foundEmployee.getId());
         Assert.assertEquals("Pippo", foundEmployee.getName());
         Assert.assertEquals((Long) 789L, foundEmployee.getSalary());
 
         print("delete");
         query = em.createQuery("DELETE FROM Employee e WHERE e.name = :n", Employee.class);
-        int deleted = query.setParameter("n", "Fabio").executeUpdate();
+        int deleted = query.setParameter("n", "Pippo").executeUpdate();
         Assert.assertEquals(1, deleted);
 
         query = em.createQuery("SELECT e FROM Employee e", Employee.class);
