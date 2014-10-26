@@ -12,7 +12,7 @@ import org.junit.Test;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
-import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import java.util.List;
 
 /**
@@ -63,7 +63,7 @@ public class QueryOTOTest {
         clear();
 
         print("select all");
-        Query query = em.createQuery("SELECT e FROM EmployeeOTO e");
+        TypedQuery<EmployeeOTO> query = em.createQuery("SELECT e FROM EmployeeOTO e", EmployeeOTO.class);
         List<EmployeeOTO> allEmployees = query.getResultList();
         int toCheck = 1;
         for (EmployeeOTO emp : allEmployees) {
@@ -83,7 +83,7 @@ public class QueryOTOTest {
         clear();
 
         print("select by inner filed");
-        query = em.createQuery("SELECT e FROM EmployeeOTO e WHERE e.phone = :pid");
+        query = em.createQuery("SELECT e FROM EmployeeOTO e WHERE e.phone = :pid", EmployeeOTO.class);
         EmployeeOTO foundEmployee = (EmployeeOTO) query.setParameter("pid", phnId).getSingleResult();
         Assert.assertNotNull(foundEmployee.getId());
         Assert.assertNotNull(foundEmployee.getPhone());

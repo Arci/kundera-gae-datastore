@@ -2,7 +2,7 @@ package it.polimi.client.datastore.query;
 
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
 import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
-import it.polimi.client.datastore.entities.*;
+import it.polimi.client.datastore.entities.Employee;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -11,7 +11,7 @@ import org.junit.Test;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
-import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import java.util.List;
 
 /**
@@ -60,7 +60,7 @@ public class DatastoreQueryTest {
         clear();
 
         print("select all");
-        Query query = em.createQuery("SELECT e FROM Employee e");
+        TypedQuery<Employee> query = em.createQuery("SELECT e FROM Employee e", Employee.class);
         List<Employee> allEmployees = query.getResultList();
         Assert.assertNotNull(allEmployees);
         Assert.assertEquals(2, allEmployees.size());
@@ -82,8 +82,8 @@ public class DatastoreQueryTest {
         clear();
 
         print("where clause");
-        query = em.createQuery("SELECT e FROM Employee e WHERE e.id = :id");
-        Employee foundEmployee = (Employee) query.setParameter("id", emp1Id).getSingleResult();
+        query = em.createQuery("SELECT e FROM Employee e WHERE e.id = :id", Employee.class);
+        Employee foundEmployee = query.setParameter("id", emp1Id).getSingleResult();
         Assert.assertNotNull(foundEmployee);
         Assert.assertEquals(emp1Id, foundEmployee.getId());
         Assert.assertEquals("Fabio", foundEmployee.getName());
@@ -92,8 +92,8 @@ public class DatastoreQueryTest {
         clear();
 
         print("complex where clause");
-        query = em.createQuery("SELECT e FROM Employee e WHERE e.name = :n AND e.salary = :s");
-        foundEmployee = (Employee) query.setParameter("n", "Crizia").setParameter("s", 456L).getSingleResult();
+        query = em.createQuery("SELECT e FROM Employee e WHERE e.name = :n AND e.salary = :s", Employee.class);
+        foundEmployee = query.setParameter("n", "Crizia").setParameter("s", 456L).getSingleResult();
         Assert.assertNotNull(foundEmployee);
         Assert.assertEquals(emp2Id, foundEmployee.getId());
         Assert.assertEquals("Crizia", foundEmployee.getName());
@@ -104,12 +104,12 @@ public class DatastoreQueryTest {
         clear();
 
         print("order by clause");
-        query = em.createQuery("SELECT e FROM Employee e ORDER BY e.name");
+        query = em.createQuery("SELECT e FROM Employee e ORDER BY e.name", Employee.class);
         allEmployees = query.getResultList();
         Assert.assertEquals(2, allEmployees.size());
         Assert.assertTrue(allEmployees.get(0).getName().equals("Crizia"));
         Assert.assertTrue(allEmployees.get(1).getName().equals("Fabio"));
-        query = em.createQuery("SELECT e FROM Employee e ORDER BY e.salary DESC");
+        query = em.createQuery("SELECT e FROM Employee e ORDER BY e.salary DESC", Employee.class);
         allEmployees = query.getResultList();
         Assert.assertEquals(2, allEmployees.size());
         Assert.assertTrue(allEmployees.get(0).getSalary().equals(456L));
@@ -128,23 +128,23 @@ public class DatastoreQueryTest {
         clear();
 
         print("update");
-        Query query = em.createQuery("UPDATE Employee SET salary = :s WHERE name = :n");
+        TypedQuery<Employee> query = em.createQuery("UPDATE Employee SET salary = :s WHERE name = :n", Employee.class);
         int updated = query.setParameter("s", 789L).setParameter("n", "Pippo").executeUpdate();
         Assert.assertEquals(1, updated);
 
-        query = em.createQuery("SELECT e FROM Employee e WHERE e.id = :id");
-        Employee foundEmployee = (Employee) query.setParameter("id", emp1Id).getSingleResult();
+        query = em.createQuery("SELECT e FROM Employee e WHERE e.id = :id", Employee.class);
+        Employee foundEmployee = query.setParameter("id", emp1Id).getSingleResult();
         Assert.assertNotNull(foundEmployee);
         Assert.assertEquals(emp1Id, foundEmployee.getName());
         Assert.assertEquals("Pippo", foundEmployee.getName());
         Assert.assertEquals((Long) 789L, foundEmployee.getSalary());
 
         print("delete");
-        query = em.createQuery("DELETE FROM Employee e WHERE e.name = :n");
+        query = em.createQuery("DELETE FROM Employee e WHERE e.name = :n", Employee.class);
         int deleted = query.setParameter("n", "Fabio").executeUpdate();
         Assert.assertEquals(1, deleted);
 
-        query = em.createQuery("SELECT e FROM Employee e");
+        query = em.createQuery("SELECT e FROM Employee e", Employee.class);
         List<Employee> allEmployees = query.getResultList();
         Assert.assertNotNull(allEmployees);
         Assert.assertTrue(allEmployees.isEmpty());

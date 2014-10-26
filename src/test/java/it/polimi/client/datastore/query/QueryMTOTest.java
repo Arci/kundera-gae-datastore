@@ -4,7 +4,6 @@ import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestC
 import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
 import it.polimi.client.datastore.entities.Department;
 import it.polimi.client.datastore.entities.EmployeeMTO;
-import it.polimi.client.datastore.entities.EmployeeOTO;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -13,7 +12,7 @@ import org.junit.Test;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
-import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import java.util.List;
 
 /**
@@ -72,7 +71,7 @@ public class QueryMTOTest {
         clear();
 
         print("select all");
-        Query query = em.createQuery("SELECT e FROM EmployeeMTO e");
+        TypedQuery<EmployeeMTO> query = em.createQuery("SELECT e FROM EmployeeMTO e", EmployeeMTO.class);
         List<EmployeeMTO> allEmployees = query.getResultList();
         int toCheck = 2;
         for (EmployeeMTO emp : allEmployees) {
@@ -97,8 +96,8 @@ public class QueryMTOTest {
         clear();
 
         print("select by inner filed");
-        query = em.createQuery("SELECT e FROM EmployeeMTO e WHERE e.department = :did AND e.name = :n");
-        EmployeeMTO foundEmployee = (EmployeeMTO) query.setParameter("did", depId).setParameter("n", "Fabio").getSingleResult();
+        query = em.createQuery("SELECT e FROM EmployeeMTO e WHERE e.department = :did AND e.name = :n", EmployeeMTO.class);
+        EmployeeMTO foundEmployee = query.setParameter("did", depId).setParameter("n", "Fabio").getSingleResult();
         Assert.assertNotNull(foundEmployee.getId());
         Assert.assertNotNull(foundEmployee.getDepartment());
         Assert.assertEquals("Fabio", foundEmployee.getName());
@@ -106,6 +105,7 @@ public class QueryMTOTest {
         Assert.assertEquals(depId, foundEmployee.getDepartment().getId());
         Assert.assertEquals("Computer Science", foundEmployee.getDepartment().getName());
     }
+
     private void clear() {
         em.clear();
         print("clear entity manager");

@@ -93,7 +93,7 @@ public class DatastoreQuery extends QueryImpl {
         QueryBuilder builder = new QueryBuilder(entityMetadata, entityType, holdRelationships);
         builder.setFrom(kunderaQuery.getEntityClass())
                 .addFilters(kunderaQuery.getFilterClauseQueue())
-                .addOrdering(kunderaQuery.getOrdering());
+                .addOrderings(kunderaQuery.getOrdering());
         return builder;
     }
 

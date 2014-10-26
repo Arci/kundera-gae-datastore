@@ -140,7 +140,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
              */
             if (!attribute.isAssociation() && !((AbstractAttribute) attribute).getJPAColumnName().equals(idAttribute)) {
                 if (metamodel.isEmbeddable(((AbstractAttribute) attribute).getBindableJavaType())) {
-                    processEmbeddableAttribute(gaeEntity, entity, attribute, metamodel, metadata);
+                    processEmbeddableAttribute(gaeEntity, entity, attribute, metamodel);
                 } else {
                     processAttribute(gaeEntity, entity, attribute);
                 }
@@ -166,7 +166,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         }
     }
 
-    private void processEmbeddableAttribute(Entity gaeEntity, Object entity, Attribute attribute, MetamodelImpl metamodel, EntityMetadata metadata) {
+    private void processEmbeddableAttribute(Entity gaeEntity, Object entity, Attribute attribute, MetamodelImpl metamodel) {
         Field field = (Field) attribute.getJavaMember();
         String jpaColumnName = ((AbstractAttribute) attribute).getJPAColumnName();
         Object embeddedObj = PropertyAccessorHelper.getObject(entity, field);
@@ -199,12 +199,12 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     }
 
     private void handleDiscriminatorColumn(Entity gaeEntity, EntityType entityType) {
-        String discrColumn = ((AbstractManagedType) entityType).getDiscriminatorColumn();
-        String discrValue = ((AbstractManagedType) entityType).getDiscriminatorValue();
+        String discriminatorColumn = ((AbstractManagedType) entityType).getDiscriminatorColumn();
+        String discriminatorValue = ((AbstractManagedType) entityType).getDiscriminatorValue();
 
-        if (discrColumn != null && discrValue != null) {
-            System.out.println("discrColumn = [" + discrColumn + "], discrValue = [" + discrValue + "]");
-            gaeEntity.setProperty(discrColumn, discrValue);
+        if (discriminatorColumn != null && discriminatorValue != null) {
+            System.out.println("discrColumn = [" + discriminatorColumn + "], discrValue = [" + discriminatorValue + "]");
+            gaeEntity.setProperty(discriminatorColumn, discriminatorValue);
         }
     }
 
@@ -287,9 +287,6 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         } catch (IllegalAccessException e) {
             e.printStackTrace();
             throw new KunderaException(e.getMessage());
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-            throw new KunderaException(e.getMessage());
         }
     }
 
@@ -309,7 +306,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         }
     }
 
-    private EnhanceEntity initializeEntity(Entity gaeEntity, Class entityClass) throws IllegalAccessException, InstantiationException, ClassNotFoundException {
+    private EnhanceEntity initializeEntity(Entity gaeEntity, Class entityClass) throws IllegalAccessException, InstantiationException {
         System.out.println("DatastoreClient.initializeEntity");
 
         EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entityClass);
@@ -588,8 +585,6 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
             } catch (IllegalAccessException e) {
                 e.printStackTrace();
             } catch (InstantiationException e) {
-                e.printStackTrace();
-            } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             }
         }

@@ -22,12 +22,12 @@ public class QueryBuilder {
 
     private Query query;
     private String kind;
-    private boolean withRelations;
+    private boolean holdRelationships;
     private final EntityMetadata entityMetadata;
     private final EntityType entityType;
 
     public QueryBuilder(EntityMetadata entityMetadata, EntityType entityType, boolean holdRelationships) {
-        this.withRelations = holdRelationships;
+        this.holdRelationships = holdRelationships;
         this.entityMetadata = entityMetadata;
         this.entityType = entityType;
         this.kind = getEntityClass().getSimpleName();
@@ -47,7 +47,7 @@ public class QueryBuilder {
     }
 
     public Boolean holdRelationships() {
-        return this.withRelations;
+        return this.holdRelationships;
     }
 
     public QueryBuilder setFrom(Class entityClass) {
@@ -88,7 +88,7 @@ public class QueryBuilder {
         return this;
     }
 
-    public QueryBuilder addOrdering(List<KunderaQuery.SortOrdering> ordering) {
+    public QueryBuilder addOrderings(List<KunderaQuery.SortOrdering> ordering) {
         if (ordering != null && !ordering.isEmpty()) {
             for (KunderaQuery.SortOrdering order : ordering) {
                 Query.SortDirection direction = parseOrdering(order.getOrder());
@@ -96,8 +96,8 @@ public class QueryBuilder {
                     String attributeName = order.getColumnName().split("\\.")[1];
                     Attribute attribute = entityType.getAttribute(attributeName);
                     String jpaColumnName = ((AbstractAttribute) attribute).getJPAColumnName();
-                    this.query.addSort(jpaColumnName, direction);
-                } catch (IndexOutOfBoundsException iobe) {
+                    addOrdering(direction, jpaColumnName);
+                } catch (IndexOutOfBoundsException iobex) {
                     /* case fail in split() */
                     throw new KunderaException("Attribute [" + order.getColumnName() + "] " +
                             "not found in entity class: " + getEntityClass());
@@ -108,6 +108,11 @@ public class QueryBuilder {
                 }
             }
         }
+        return this;
+    }
+
+    private QueryBuilder addOrdering(Query.SortDirection direction, String jpaColumnName) {
+        this.query.addSort(jpaColumnName, direction);
         return this;
     }
 

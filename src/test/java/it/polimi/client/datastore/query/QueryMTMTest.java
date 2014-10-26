@@ -12,7 +12,7 @@ import org.junit.Test;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
-import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import java.util.List;
 
 /**
@@ -75,48 +75,48 @@ public class QueryMTMTest {
         clear();
 
         print("select all");
-        Query query = em.createQuery("SELECT e FROM EmployeeMTM e");
+        TypedQuery<EmployeeMTM> query = em.createQuery("SELECT e FROM EmployeeMTM e", EmployeeMTM.class);
         List<EmployeeMTM> allEmployees = query.getResultList();
         int empToCheck = 2;
-        int emp1projToCheck = 2;
-        int emp2projToCheck = 2;
+        int emp1projectsToCheck = 2;
+        int emp2projectsToCheck = 2;
         for (EmployeeMTM emp : allEmployees) {
             Assert.assertNotNull(emp.getId());
             if (emp.getId().equals(emp1Id)) {
                 empToCheck--;
                 Assert.assertEquals("Fabio", emp.getName());
                 Assert.assertEquals((Long) 123L, emp.getSalary());
-                for (ProjectMTM proj : emp.getProjects()) {
-                    if (proj.getId().equals(prj1Id)) {
-                        emp1projToCheck--;
-                        Assert.assertEquals(prj1Id, proj.getId());
-                        Assert.assertEquals("Project 1", proj.getName());
-                    } else if (proj.getId().equals(prj2Id)) {
-                        emp1projToCheck--;
-                        Assert.assertEquals(prj2Id, proj.getId());
-                        Assert.assertEquals("Project 2", proj.getName());
+                for (ProjectMTM project : emp.getProjects()) {
+                    if (project.getId().equals(prj1Id)) {
+                        emp1projectsToCheck--;
+                        Assert.assertEquals(prj1Id, project.getId());
+                        Assert.assertEquals("Project 1", project.getName());
+                    } else if (project.getId().equals(prj2Id)) {
+                        emp1projectsToCheck--;
+                        Assert.assertEquals(prj2Id, project.getId());
+                        Assert.assertEquals("Project 2", project.getName());
                     }
                 }
             } else if (emp.getId().equals(emp2Id)) {
                 empToCheck--;
                 Assert.assertEquals("Crizia", emp.getName());
                 Assert.assertEquals((Long) 456L, emp.getSalary());
-                for (ProjectMTM proj : emp.getProjects()) {
-                    if (proj.getId().equals(prj2Id)) {
-                        emp2projToCheck--;
-                        Assert.assertEquals(prj2Id, proj.getId());
-                        Assert.assertEquals("Project 2", proj.getName());
-                    } else if (proj.getId().equals(prj3Id)) {
-                        emp2projToCheck--;
-                        Assert.assertEquals(prj3Id, proj.getId());
-                        Assert.assertEquals("Project 3", proj.getName());
+                for (ProjectMTM project : emp.getProjects()) {
+                    if (project.getId().equals(prj2Id)) {
+                        emp2projectsToCheck--;
+                        Assert.assertEquals(prj2Id, project.getId());
+                        Assert.assertEquals("Project 2", project.getName());
+                    } else if (project.getId().equals(prj3Id)) {
+                        emp2projectsToCheck--;
+                        Assert.assertEquals(prj3Id, project.getId());
+                        Assert.assertEquals("Project 3", project.getName());
                     }
                 }
             }
         }
         Assert.assertEquals(0, empToCheck);
-        Assert.assertEquals(0, emp1projToCheck);
-        Assert.assertEquals(0, emp2projToCheck);
+        Assert.assertEquals(0, emp1projectsToCheck);
+        Assert.assertEquals(0, emp2projectsToCheck);
 
         /*
          * NOTE: cannot directly query over join table

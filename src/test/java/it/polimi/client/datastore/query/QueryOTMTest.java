@@ -4,7 +4,6 @@ import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestC
 import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
 import it.polimi.client.datastore.entities.DepartmentOTM;
 import it.polimi.client.datastore.entities.EmployeeMTObis;
-import it.polimi.client.datastore.entities.EmployeeOTO;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -13,7 +12,7 @@ import org.junit.Test;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
-import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import java.util.List;
 
 /**
@@ -72,12 +71,12 @@ public class QueryOTMTest {
         clear();
 
         print("select all");
-        Query query = em.createQuery("SELECT d FROM DepartmentOTM d");
+        TypedQuery<DepartmentOTM> query = em.createQuery("SELECT d FROM DepartmentOTM d", DepartmentOTM.class);
         List<DepartmentOTM> allDepartments = query.getResultList();
         print("access employees");
         int toCheck = 1;
         int empInDep = 2;
-        for(DepartmentOTM dep : allDepartments) {
+        for (DepartmentOTM dep : allDepartments) {
             toCheck--;
             Assert.assertEquals("Computer Science", dep.getName());
             for (EmployeeMTObis emp : dep.getEmployees()) {
@@ -103,9 +102,9 @@ public class QueryOTMTest {
         clear();
 
         print("fill relation by query");
-        query = em.createQuery("SELECT e FROM EmployeeMTObis e WHERE e.department = :did");
-        List<EmployeeMTObis> depEmployees = query.setParameter("did", depId).getResultList();
-        for(EmployeeMTObis emp : depEmployees){
+        TypedQuery<EmployeeMTObis> employeeQuery = em.createQuery("SELECT e FROM EmployeeMTObis e WHERE e.department = :did", EmployeeMTObis.class);
+        List<EmployeeMTObis> depEmployees = employeeQuery.setParameter("did", depId).getResultList();
+        for (EmployeeMTObis emp : depEmployees) {
             if (emp.getId().equals(emp1Id)) {
                 empInDep--;
                 Assert.assertEquals(emp1Id, emp.getId());

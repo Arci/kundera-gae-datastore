@@ -15,16 +15,16 @@ import java.util.Map;
 public class DatastorePropertyReader extends AbstractPropertyReader implements PropertyReader {
 
     private static Logger logger = LoggerFactory.getLogger(DatastorePropertyReader.class);
-    private final DatastoreSchemaMetadata dsmd;
+    private final DatastoreSchemaMetadata datastoreSchemaMetadata;
 
     public DatastorePropertyReader(Map externalProperties, PersistenceUnitMetadata puMetadata) {
         super(externalProperties, puMetadata);
-        dsmd = new DatastoreSchemaMetadata();
+        datastoreSchemaMetadata = new DatastoreSchemaMetadata();
     }
 
     public void onXml(ClientProperties cp) {
         if (cp != null) {
-            dsmd.setClientProperties(cp);
+            datastoreSchemaMetadata.setClientProperties(cp);
         }
     }
 
