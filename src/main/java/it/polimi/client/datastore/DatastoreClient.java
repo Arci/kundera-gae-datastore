@@ -71,18 +71,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
     /* TODO decidere
      *
-     * 1. check for unsupported types? o comunque intercettare
-     *    element collections e salvarle con la colonna per
-     *    indicare il tipo? non lo fanno le altre implementazioni, andrebbero
-     *    cambiare tutte le implementazioni che ci interessano
-     *
      * 2. test con string id e long id inseriti dall'utente
-     *
-     * 3. chiedere sul gruppo:
-     *      - semantica di:
-     *          -  public <E> List<E> find(Class<E> entityClass, Map<String, String> embeddedColumnMap)
-     *          -  public <E> List<E> findAll(Class<E> entityClass, String[] columnsToSelect, Object... keys)
-     *      - se è possibile recuperare entityMetadata da joinTableName
      *
      * 3. settare indici per le query sui campi delle relazioni:
      *      - quando si salvano (initializeRelations)
@@ -90,11 +79,6 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
      *      - nelle embedded entities?
      *    magari usare annotation, dovrebbe essere possibile, dato il field, recuperare le sue annotation.
      *    Per settare indici setProperty(), altrimenti setUnindexedProperty()
-     *
-     * 4. tutte le entity figlie di una root fittizia? per averle
-     *    nello stesso entity group --> magari impostarlo nelle config
-     *    per rendelo disponibile all'untete che piò specificare anche il nome
-     *    della root entity
      *
      */
 
@@ -154,7 +138,13 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         String jpaColumnName = ((AbstractAttribute) attribute).getJPAColumnName();
 
         /* TODO
-         * @ElementCollection fields falls here thus are saved without further checks
+         * case of @ElementCollections and unsupported types
+         *    if supported || list
+         *        save (do what this method currently do)
+         *    else
+         *        serialize using Marco utils
+         *        save the serialized object
+         *        save a column that contain its type
          */
 
         if (((Field) attribute.getJavaMember()).getType().isEnum()) {
@@ -388,7 +378,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("DatastoreClient.findAll");
         System.out.println("entityClass = [" + entityClass + "], columnsToSelect = [" + columnsToSelect + "], keys = [" + keys + "]");
 
-        // TODO review this, use columnsToSelect
+        // TODO review this, use columnsToSelect?
         // List results = new ArrayList();
         // for (Object key : keys) {
         //     Object object = this.find(entityClass, key);
@@ -434,11 +424,11 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         Relation relation = entityMetadata.getRelation(fieldName);
         Key targetKey = KeyFactory.createKey(relation.getTargetEntity().getSimpleName(), (String) colValue);
 
-        Query q = generateRelationQuery(entityClass.getSimpleName(), colName, targetKey);
-        q.setKeysOnly();
+        Query query = generateRelationQuery(entityClass.getSimpleName(), colName, targetKey);
+        query.setKeysOnly();
 
         List<Object> results = new ArrayList<Object>();
-        List<Entity> entities = datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
+        List<Entity> entities = getQueryResults(query);
         if (!entities.isEmpty()) {
             for (Entity entity : entities) {
                 results.add(find(entityClass, entity.getKey()));
@@ -461,10 +451,10 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("DatastoreClient.getColumnsById");
         System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], pKeyColumnName = [" + pKeyColumnName + "], columnName = [" + columnName + "], pKeyColumnValue = [" + pKeyColumnValue + "], columnJavaType = [" + columnJavaType + "]");
 
-        Query q = generateRelationQuery(tableName, pKeyColumnName, pKeyColumnValue);
+        Query query = generateRelationQuery(tableName, pKeyColumnName, pKeyColumnValue);
 
         List<E> results = new ArrayList<E>();
-        List<Entity> entities = datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
+        List<Entity> entities = getQueryResults(query);
         System.out.println(columnName + " for " + pKeyColumnName + "[" + pKeyColumnValue + "]:");
         if (!entities.isEmpty()) {
             for (Entity entity : entities) {
@@ -502,10 +492,10 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("DatastoreClient.findIdsByColumn");
         System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], pKeyName = [" + pKeyName + "], columnName = [" + columnName + "], columnValue = [" + columnValue + "], entityClazz = [" + entityClazz + "]");
 
-        Query q = generateRelationQuery(tableName, columnName, columnValue);
+        Query query = generateRelationQuery(tableName, columnName, columnValue);
 
         List<Object> results = new ArrayList<Object>();
-        List<Entity> entities = datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
+        List<Entity> entities = getQueryResults(query);
         System.out.println(pKeyName + " for " + columnName + "[" + columnValue + "]:");
         if (!entities.isEmpty()) {
             for (Entity entity : entities) {
@@ -545,10 +535,10 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("DatastoreClient.deleteByColumn");
         System.out.println("schemaName = [" + schemaName + "], tableName = [" + tableName + "], columnName = [" + columnName + "], columnValue = [" + columnValue + "]");
 
-        Query q = generateRelationQuery(tableName, columnName, columnValue);
-        q.setKeysOnly();
+        Query query = generateRelationQuery(tableName, columnName, columnValue);
+        query.setKeysOnly();
 
-        List<Entity> entities = datastore.prepare(q).asList(FetchOptions.Builder.withDefaults());
+        List<Entity> entities = getQueryResults(query);
         if (!entities.isEmpty()) {
             for (Entity entity : entities) {
                 datastore.delete(entity.getKey());
@@ -570,7 +560,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("\n" + builder.getQuery() + "\n");
 
         List<Object> results = new ArrayList<Object>();
-        List<Entity> entities = datastore.prepare(builder.getQuery()).asList(FetchOptions.Builder.withDefaults());
+        List<Entity> entities = getQueryResults(builder.getQuery());
         for (Entity entity : entities) {
             System.out.println(entity);
             try {
@@ -599,5 +589,9 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
             }
         }
         return results;
+    }
+
+    private List<Entity> getQueryResults(Query query) {
+        return datastore.prepare(query).asList(FetchOptions.Builder.withDefaults());
     }
 }

@@ -2,6 +2,7 @@ package it.polimi.client.datastore.config;
 
 import com.impetus.kundera.configure.AbstractPropertyReader;
 import com.impetus.kundera.configure.ClientProperties;
+import com.impetus.kundera.configure.ClientProperties.DataStore;
 import com.impetus.kundera.configure.PropertyReader;
 import com.impetus.kundera.metadata.model.PersistenceUnitMetadata;
 import org.slf4j.Logger;
@@ -15,20 +16,20 @@ import java.util.Map;
 public class DatastorePropertyReader extends AbstractPropertyReader implements PropertyReader {
 
     private static Logger logger = LoggerFactory.getLogger(DatastorePropertyReader.class);
-    private final DatastoreSchemaMetadata datastoreSchemaMetadata;
+    public static DatastoreSchemaMetadata dsm;
 
     public DatastorePropertyReader(Map externalProperties, PersistenceUnitMetadata puMetadata) {
         super(externalProperties, puMetadata);
-        datastoreSchemaMetadata = new DatastoreSchemaMetadata();
+        dsm = new DatastoreSchemaMetadata();
     }
 
     public void onXml(ClientProperties cp) {
         if (cp != null) {
-            datastoreSchemaMetadata.setClientProperties(cp);
+            dsm.setClientProperties(cp);
         }
     }
 
-    private class DatastoreSchemaMetadata {
+    public class DatastoreSchemaMetadata {
 
         private ClientProperties clientProperties;
 
@@ -41,6 +42,17 @@ public class DatastorePropertyReader extends AbstractPropertyReader implements P
 
         private void setClientProperties(ClientProperties clientProperties) {
             this.clientProperties = clientProperties;
+        }
+
+        public DataStore getDataStore() {
+            if (getClientProperties() != null && getClientProperties().getDatastores() != null) {
+                for (DataStore dataStore : getClientProperties().getDatastores()) {
+                    if (dataStore.getName() != null && dataStore.getName().trim().equalsIgnoreCase("datastore")) {
+                        return dataStore;
+                    }
+                }
+            }
+            return null;
         }
     }
 }

@@ -41,7 +41,7 @@ public class DatastoreQueryTest {
         helper.tearDown();
     }
 
-    //@Test
+    @Test
     public void testSelectQuery() {
         print("create");
         Employee employee1 = new Employee();
