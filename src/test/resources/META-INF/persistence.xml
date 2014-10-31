@@ -14,9 +14,14 @@
         <class>it.polimi.client.datastore.entities.EmployeeMTO</class>
         <class>it.polimi.client.datastore.entities.EmployeeMTObis</class>
         <class>it.polimi.client.datastore.entities.EmployeeOTO</class>
+        <class>it.polimi.client.datastore.entities.EmployeeOTObis</class>
         <class>it.polimi.client.datastore.entities.Phone</class>
         <class>it.polimi.client.datastore.entities.PhoneEnum</class>
+        <class>it.polimi.client.datastore.entities.PhoneInvalid1</class>
+        <class>it.polimi.client.datastore.entities.PhoneInvalid2</class>
+        <class>it.polimi.client.datastore.entities.PhoneLong</class>
         <class>it.polimi.client.datastore.entities.PhoneOTO</class>
+        <class>it.polimi.client.datastore.entities.PhoneString</class>
         <class>it.polimi.client.datastore.entities.PhoneType</class>
         <class>it.polimi.client.datastore.entities.Project</class>
         <class>it.polimi.client.datastore.entities.ProjectMTM</class>
@@ -47,9 +52,14 @@
         <class>it.polimi.client.datastore.entities.EmployeeMTO</class>
         <class>it.polimi.client.datastore.entities.EmployeeMTObis</class>
         <class>it.polimi.client.datastore.entities.EmployeeOTO</class>
+        <class>it.polimi.client.datastore.entities.EmployeeOTObis</class>
         <class>it.polimi.client.datastore.entities.Phone</class>
         <class>it.polimi.client.datastore.entities.PhoneEnum</class>
+        <class>it.polimi.client.datastore.entities.PhoneInvalid1</class>
+        <class>it.polimi.client.datastore.entities.PhoneInvalid2</class>
+        <class>it.polimi.client.datastore.entities.PhoneLong</class>
         <class>it.polimi.client.datastore.entities.PhoneOTO</class>
+        <class>it.polimi.client.datastore.entities.PhoneString</class>
         <class>it.polimi.client.datastore.entities.PhoneType</class>
         <class>it.polimi.client.datastore.entities.Project</class>
         <class>it.polimi.client.datastore.entities.ProjectMTM</class>

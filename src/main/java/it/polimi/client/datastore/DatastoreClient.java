@@ -69,16 +69,12 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         return DatastoreQuery.class;
     }
 
-    /* TODO decidere
+    /* TODO decide
      *
-     * 2. test con string id e long id inseriti dall'utente
+     * 3. set indexes in embedded entities?
+     *    maybe use annotation @Index / @Indexed if some fields will not be queried
      *
-     * 3. settare indici per le query sui campi delle relazioni:
-     *      - quando si salvano (initializeRelations)
-     *      - nelle due colonne delle joinTables (persistJoinTable)
-     *      - nelle embedded entities?
-     *    magari usare annotation, dovrebbe essere possibile, dato il field, recuperare le sue annotation.
-     *    Per settare indici setProperty(), altrimenti setUnindexedProperty()
+     * 4. test JPA inheritance (CRUD and Queries)
      *
      */
 
@@ -103,7 +99,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 entityMetadata.getPersistenceUnit());
         EntityType entityType = metamodel.entity(entityMetadata.getEntityClazz());
 
-        Entity gaeEntity = new Entity(entityMetadata.getTableName(), (String) id);
+        Entity gaeEntity = createDatastoreEntity(entityMetadata, id);
 
         handleAttributes(gaeEntity, entity, metamodel, entityMetadata, entityType.getAttributes());
         handleRelations(gaeEntity, entityMetadata, rlHolders);
@@ -115,8 +111,30 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         datastore.put(gaeEntity);
     }
 
-    private void handleAttributes(Entity gaeEntity, Object entity, MetamodelImpl metamodel, EntityMetadata metadata, Set<Attribute> attributes) {
-        String idAttribute = ((AbstractAttribute) metadata.getIdAttribute()).getJPAColumnName();
+    private Entity createDatastoreEntity(EntityMetadata entityMetadata, Object id) {
+        Class idClazz = entityMetadata.getIdAttribute().getJavaType();
+        if (!(idClazz.equals(String.class) || idClazz.equals(Long.class))) {
+            throw new KunderaException("Id attribute must be either of type " + String.class + " or " + Long.class);
+        }
+        return createDatastoreEntity(entityMetadata.getTableName(), id);
+    }
+
+    private Entity createDatastoreEntity(String tableName, Object id) {
+        if (id instanceof String) {
+            return new Entity(tableName, (String) id);
+        } else if (id instanceof Long) {
+            return new Entity(tableName, (Long) id);
+        } else {
+            return createDatastoreEntity(tableName);
+        }
+    }
+
+    private Entity createDatastoreEntity(String tableName) {
+        return new Entity(tableName);
+    }
+
+    private void handleAttributes(Entity gaeEntity, Object entity, MetamodelImpl metamodel, EntityMetadata entityMetadata, Set<Attribute> attributes) {
+        String idAttribute = ((AbstractAttribute) entityMetadata.getIdAttribute()).getJPAColumnName();
         for (Attribute attribute : attributes) {
             /*
              * By pass ID attribute, is redundant since is also stored within the Key.
@@ -177,10 +195,10 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 String jpaColumnName = rh.getRelationName();
                 String fieldName = entityMetadata.getFieldName(jpaColumnName);
                 Relation relation = entityMetadata.getRelation(fieldName);
-                String targetId = (String) rh.getRelationValue();
+                Object targetId = rh.getRelationValue();
 
                 if (relation != null && jpaColumnName != null && targetId != null) {
-                    Key targetKey = KeyFactory.createKey(relation.getTargetEntity().getSimpleName(), targetId);
+                    Key targetKey = createKey(relation.getTargetEntity().getSimpleName(), targetId);
                     System.out.println("field = [" + fieldName + "], jpaColumnName = [" + jpaColumnName + "], targetKey = [" + targetKey + "]");
                     gaeEntity.setProperty(jpaColumnName, targetKey);
                 }
@@ -188,12 +206,19 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         }
     }
 
+    private Key createKey(String tableName, Object id) {
+        if (id instanceof Long) {
+            return KeyFactory.createKey(tableName, (Long) id);
+        }
+        return KeyFactory.createKey(tableName, (String) id);
+    }
+
     private void handleDiscriminatorColumn(Entity gaeEntity, EntityType entityType) {
         String discriminatorColumn = ((AbstractManagedType) entityType).getDiscriminatorColumn();
         String discriminatorValue = ((AbstractManagedType) entityType).getDiscriminatorValue();
 
         if (discriminatorColumn != null && discriminatorValue != null) {
-            System.out.println("discrColumn = [" + discriminatorColumn + "], discrValue = [" + discriminatorValue + "]");
+            System.out.println("discriminatorColumn = [" + discriminatorColumn + "], discriminatorValue = [" + discriminatorValue + "]");
             gaeEntity.setProperty(discriminatorColumn, discriminatorValue);
         }
     }
@@ -235,11 +260,11 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
         for (Object owner : joinTableRecords.keySet()) {
             Set<Object> children = joinTableRecords.get(owner);
-            //Key ownerKey = KeyFactory.createKey(joinColumnClass.getSimpleName(), (String) owner);
+            //Key ownerKey = createKey(joinColumnClass.getSimpleName(), owner);
             for (Object child : children) {
-                //Key childKey = KeyFactory.createKey(inverseJoinColumnClass.getSimpleName(), (String) child);
+                //Key childKey = createKey(inverseJoinColumnClass.getSimpleName(), child);
                 /* let datastore generate ID for the entity */
-                Entity gaeEntity = new Entity(joinTableName);
+                Entity gaeEntity = createDatastoreEntity(joinTableName);
                 // gaeEntity.setProperty(joinColumnName, ownerKey);
                 gaeEntity.setProperty(joinColumnName, owner);
                 // gaeEntity.setProperty(inverseJoinColumnName, childKey);
@@ -287,7 +312,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 /* case id is field retrieved from datastore */
                 key = (Key) id;
             } else {
-                key = KeyFactory.createKey(kind, (String) id);
+                key = createKey(kind, id);
             }
             return datastore.get(key);
         } catch (EntityNotFoundException e) {
@@ -327,7 +352,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
     private void initializeID(EntityMetadata entityMetadata, Entity gaeEntity, Object entity) {
         String jpaColumnName = ((AbstractAttribute) entityMetadata.getIdAttribute()).getJPAColumnName();
-        String id = gaeEntity.getKey().getName();
+        Object id = gaeEntity.getKey().getName();
         System.out.println("jpaColumnName = [" + jpaColumnName + "], fieldValue = [" + id + "]");
         PropertyAccessorHelper.setId(entity, entityMetadata, id);
     }
@@ -422,7 +447,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entityClass);
         String fieldName = entityMetadata.getFieldName(colName);
         Relation relation = entityMetadata.getRelation(fieldName);
-        Key targetKey = KeyFactory.createKey(relation.getTargetEntity().getSimpleName(), (String) colValue);
+        Key targetKey = createKey(relation.getTargetEntity().getSimpleName(), colValue);
 
         Query query = generateRelationQuery(entityClass.getSimpleName(), colName, targetKey);
         query.setKeysOnly();
@@ -516,7 +541,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("entity = [" + entity + "], pKey = [" + pKey + "]");
 
         EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entity.getClass());
-        Key key = KeyFactory.createKey(entityMetadata.getTableName(), (String) pKey);
+        Key key = createKey(entityMetadata.getTableName(), pKey);
         datastore.delete(key);
 
         System.out.println();

@@ -159,7 +159,7 @@ public class QueryBuilder {
             /* filter on related entity */
             Relation relation = entityMetadata.getRelation(filedName);
             String targetKind = relation.getTargetEntity().getSimpleName();
-            Key key = KeyFactory.createKey(targetKind, (String) filterValue);
+            Key key = createKey(targetKind, filterValue);
             return new Query.FilterPredicate(property, operator, key);
         } else if (property.equals(idColumnName)) {
             /* filter on entity ID */
@@ -169,6 +169,14 @@ public class QueryBuilder {
             /* filter on entity filed */
             return new Query.FilterPredicate(property, operator, filterValue);
         }
+    }
+
+    //TODO extract utils class with createKey and createDatastoreEntity (and other?)
+    private Key createKey(String tableName, Object id) {
+        if (id instanceof Long) {
+            return KeyFactory.createKey(tableName, (Long) id);
+        }
+        return KeyFactory.createKey(tableName, (String) id);
     }
 
     private Query.FilterOperator parseCondition(String condition) {
