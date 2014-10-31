@@ -24,7 +24,7 @@
         <properties>
             <property name="kundera.keyspace" value="gae-test"/>
             <!--
-                TODO schema manager
+                TODO
                 <property name="kundera.ddl.auto.prepare" value="create|create-drop|update|validate"></property>
                  - create: Drops(if exists) schema and then creates schema/ tables based on entity definitions.
                  - create-drop: Drops(if exists) schema, creates schema/ tables based on entity definitions and finally drops schema after operation ends.

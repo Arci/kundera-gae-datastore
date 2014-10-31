@@ -11,8 +11,10 @@
 
                     <!-- optional, can be "eventual" or "strong" -->
                     <property name="datastore.policy.read" value="strong"></property>
-                    <!-- optional, read deadline in seconds -->
-                    <property name="datastore.policy.read.deadline" value="5"></property>
+                    <!-- optional, rpcs deadline in seconds -->
+                    <property name="datastore.deadline" value="5"></property>
+                    <!-- optional, implicit transactions, can be "auto" or "none" -->
+                    <property name="datastore.policy.transaction" value="none"></property>
                 </properties>
             </connection>
         </dataStore>
