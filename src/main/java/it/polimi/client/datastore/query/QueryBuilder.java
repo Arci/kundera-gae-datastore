@@ -1,11 +1,15 @@
 package it.polimi.client.datastore.query;
 
-import com.google.appengine.api.datastore.*;
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.PropertyProjection;
+import com.google.appengine.api.datastore.Query;
 import com.impetus.kundera.KunderaException;
 import com.impetus.kundera.metadata.model.EntityMetadata;
 import com.impetus.kundera.metadata.model.Relation;
 import com.impetus.kundera.metadata.model.attributes.AbstractAttribute;
 import com.impetus.kundera.query.KunderaQuery;
+import it.polimi.client.datastore.DatastoreUtils;
 
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EntityType;
@@ -159,24 +163,16 @@ public class QueryBuilder {
             /* filter on related entity */
             Relation relation = entityMetadata.getRelation(filedName);
             String targetKind = relation.getTargetEntity().getSimpleName();
-            Key key = createKey(targetKind, filterValue);
+            Key key = DatastoreUtils.createKey(targetKind, filterValue);
             return new Query.FilterPredicate(property, operator, key);
         } else if (property.equals(idColumnName)) {
             /* filter on entity ID */
-            Key key = KeyFactory.createKey(this.kind, (String) filterValue);
+            Key key = DatastoreUtils.createKey(this.kind, filterValue);
             return new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, operator, key);
         } else {
             /* filter on entity filed */
             return new Query.FilterPredicate(property, operator, filterValue);
         }
-    }
-
-    //TODO extract utils class with createKey and createDatastoreEntity (and other?)
-    private Key createKey(String tableName, Object id) {
-        if (id instanceof Long) {
-            return KeyFactory.createKey(tableName, (Long) id);
-        }
-        return KeyFactory.createKey(tableName, (String) id);
     }
 
     private Query.FilterOperator parseCondition(String condition) {

@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EmbeddableType;
 import javax.persistence.metamodel.EntityType;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -41,6 +42,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     private static final Logger logger = LoggerFactory.getLogger(DatastoreClient.class);
     private EntityReader reader;
     private DatastoreService datastore;
+    public static final String TYPE_SUFFIX = "_type";
 
     protected DatastoreClient(final KunderaMetadata kunderaMetadata, Map<String, Object> properties,
                               String persistenceUnit, final ClientMetadata clientMetadata, IndexManager indexManager,
@@ -99,7 +101,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 entityMetadata.getPersistenceUnit());
         EntityType entityType = metamodel.entity(entityMetadata.getEntityClazz());
 
-        Entity gaeEntity = createDatastoreEntity(entityMetadata, id);
+        Entity gaeEntity = DatastoreUtils.createDatastoreEntity(entityMetadata, id);
 
         handleAttributes(gaeEntity, entity, metamodel, entityMetadata, entityType.getAttributes());
         handleRelations(gaeEntity, entityMetadata, rlHolders);
@@ -109,28 +111,6 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("\n" + gaeEntity + "\n");
 
         datastore.put(gaeEntity);
-    }
-
-    private Entity createDatastoreEntity(EntityMetadata entityMetadata, Object id) {
-        Class idClazz = entityMetadata.getIdAttribute().getJavaType();
-        if (!(idClazz.equals(String.class) || idClazz.equals(Long.class))) {
-            throw new KunderaException("Id attribute must be either of type " + String.class + " or " + Long.class);
-        }
-        return createDatastoreEntity(entityMetadata.getTableName(), id);
-    }
-
-    private Entity createDatastoreEntity(String tableName, Object id) {
-        if (id instanceof String) {
-            return new Entity(tableName, (String) id);
-        } else if (id instanceof Long) {
-            return new Entity(tableName, (Long) id);
-        } else {
-            return createDatastoreEntity(tableName);
-        }
-    }
-
-    private Entity createDatastoreEntity(String tableName) {
-        return new Entity(tableName);
     }
 
     private void handleAttributes(Entity gaeEntity, Object entity, MetamodelImpl metamodel, EntityMetadata entityMetadata, Set<Attribute> attributes) {
@@ -155,17 +135,15 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         Object valueObj = PropertyAccessorHelper.getObject(entity, field);
         String jpaColumnName = ((AbstractAttribute) attribute).getJPAColumnName();
 
-        /* TODO
-         * case of @ElementCollections and unsupported types
-         *    if supported || list
-         *        save (do what this method currently do)
-         *    else
-         *        serialize using Marco utils
-         *        save the serialized object
-         *        save a column that contain its type
-         */
-
-        if (((Field) attribute.getJavaMember()).getType().isEnum()) {
+        if (valueObj instanceof Collection<?> || valueObj instanceof Map<?, ?>) {
+            try {
+                System.out.println("field = [" + field.getName() + "], typeColumn = [" + jpaColumnName + "_type], objectType = [" + valueObj.getClass().getName() + "]");
+                gaeEntity.setProperty(jpaColumnName + TYPE_SUFFIX, valueObj.getClass().getName());
+                valueObj = DatastoreUtils.serialize(valueObj);
+            } catch (IOException ioex) {
+                throw new KunderaException("Some errors occurred while serializing the object; Caused by " + ioex.getCause() + " with message:" + ioex.getMessage());
+            }
+        } else if (((Field) attribute.getJavaMember()).getType().isEnum()) {
             valueObj = valueObj.toString();
         }
         if (valueObj != null) {
@@ -198,19 +176,12 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 Object targetId = rh.getRelationValue();
 
                 if (relation != null && jpaColumnName != null && targetId != null) {
-                    Key targetKey = createKey(relation.getTargetEntity().getSimpleName(), targetId);
+                    Key targetKey = DatastoreUtils.createKey(relation.getTargetEntity().getSimpleName(), targetId);
                     System.out.println("field = [" + fieldName + "], jpaColumnName = [" + jpaColumnName + "], targetKey = [" + targetKey + "]");
                     gaeEntity.setProperty(jpaColumnName, targetKey);
                 }
             }
         }
-    }
-
-    private Key createKey(String tableName, Object id) {
-        if (id instanceof Long) {
-            return KeyFactory.createKey(tableName, (Long) id);
-        }
-        return KeyFactory.createKey(tableName, (String) id);
     }
 
     private void handleDiscriminatorColumn(Entity gaeEntity, EntityType entityType) {
@@ -264,7 +235,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
             for (Object child : children) {
                 //Key childKey = createKey(inverseJoinColumnClass.getSimpleName(), child);
                 /* let datastore generate ID for the entity */
-                Entity gaeEntity = createDatastoreEntity(joinTableName);
+                Entity gaeEntity = DatastoreUtils.createDatastoreEntity(joinTableName);
                 // gaeEntity.setProperty(joinColumnName, ownerKey);
                 gaeEntity.setProperty(joinColumnName, owner);
                 // gaeEntity.setProperty(inverseJoinColumnName, childKey);
@@ -296,12 +267,10 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
             }
             System.out.println(gaeEntity);
             return initializeEntity(gaeEntity, entityClass);
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-            throw new KunderaException(e.getMessage());
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-            throw new KunderaException(e.getMessage());
+        } catch (InstantiationException iex) {
+            throw new KunderaException(iex);
+        } catch (IllegalAccessException iaex) {
+            throw new KunderaException(iaex);
         }
     }
 
@@ -312,7 +281,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 /* case id is field retrieved from datastore */
                 key = (Key) id;
             } else {
-                key = createKey(kind, id);
+                key = DatastoreUtils.createKey(kind, id);
             }
             return datastore.get(key);
         } catch (EntityNotFoundException e) {
@@ -353,6 +322,10 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     private void initializeID(EntityMetadata entityMetadata, Entity gaeEntity, Object entity) {
         String jpaColumnName = ((AbstractAttribute) entityMetadata.getIdAttribute()).getJPAColumnName();
         Object id = gaeEntity.getKey().getName();
+        if (id == null) {
+            /* case datastore generated long */
+            id = gaeEntity.getKey().getId();
+        }
         System.out.println("jpaColumnName = [" + jpaColumnName + "], fieldValue = [" + id + "]");
         PropertyAccessorHelper.setId(entity, entityMetadata, id);
     }
@@ -361,7 +334,15 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         String jpaColumnName = ((AbstractAttribute) attribute).getJPAColumnName();
         Object fieldValue = gaeEntity.getProperties().get(jpaColumnName);
 
-        if (((Field) attribute.getJavaMember()).getType().isEnum()) {
+        if (fieldValue instanceof Blob) {
+            try {
+                // Class<?> filedType = Class.forName((String) gaeEntity.getProperties().get(jpaColumnName + TYPE_SUFFIX));
+                fieldValue = DatastoreUtils.deserialize((Blob) fieldValue);
+            } catch (Exception e) {
+                throw new KunderaException("Some errors occurred while deserializing the object; Caused by " +
+                        "[" + e.getClass().getName() + "] " + e.getCause() + ", with message: " + e.getMessage());
+            }
+        } else if (((Field) attribute.getJavaMember()).getType().isEnum()) {
             EnumAccessor accessor = new EnumAccessor();
             fieldValue = accessor.fromString(((AbstractAttribute) attribute).getBindableJavaType(), fieldValue.toString());
         }
@@ -412,23 +393,19 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         //     }
         // }
         // return results;
+
+        /**
+         * Implicitly it gets invoked, when kundera.indexer.class or lucene.home.dir is configured.
+         * Means to use custom indexer for secondary indexes.
+         * This method can also be very helpful to find rows for all primary keys! as with
+         * em.getDelegate() you can get a handle of client object and can simply invoke findAll.
+         */
         throw new NotImplementedException();
     }
 
     @Override
     public <E> List<E> find(Class<E> entityClass, Map<String, String> embeddedColumnMap) {
-        System.out.println("DatastoreClient.find");
-        System.out.println("entityClass = [" + entityClass + "],");
-        String out = "embeddedColumnMap = [\n";
-        for (String key : embeddedColumnMap.keySet()) {
-            out += "\tkey = [" + key + "], value = [" + embeddedColumnMap.get(key) + "]\n";
-        }
-        out += "]";
-        System.out.println(out);
-
-        // TODO Auto-generated method stub
-        throw new NotImplementedException();
-        // return null;
+        throw new UnsupportedOperationException("Not supported in " + this.getClass().getSimpleName());
     }
 
     /*
@@ -447,7 +424,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entityClass);
         String fieldName = entityMetadata.getFieldName(colName);
         Relation relation = entityMetadata.getRelation(fieldName);
-        Key targetKey = createKey(relation.getTargetEntity().getSimpleName(), colValue);
+        Key targetKey = DatastoreUtils.createKey(relation.getTargetEntity().getSimpleName(), colValue);
 
         Query query = generateRelationQuery(entityClass.getSimpleName(), colName, targetKey);
         query.setKeysOnly();
@@ -541,7 +518,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         System.out.println("entity = [" + entity + "], pKey = [" + pKey + "]");
 
         EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entity.getClass());
-        Key key = createKey(entityMetadata.getTableName(), pKey);
+        Key key = DatastoreUtils.createKey(entityMetadata.getTableName(), pKey);
         datastore.delete(key);
 
         System.out.println();
@@ -607,10 +584,10 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                         }
                     }
                 }
-            } catch (IllegalAccessException e) {
-                e.printStackTrace();
-            } catch (InstantiationException e) {
-                e.printStackTrace();
+            } catch (InstantiationException iex) {
+                throw new KunderaException(iex);
+            } catch (IllegalAccessException iaex) {
+                throw new KunderaException(iaex);
             }
         }
         return results;

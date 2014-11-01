@@ -10,6 +10,7 @@ import org.junit.rules.ExpectedException;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
+import javax.persistence.TypedQuery;
 
 /**
  * @author Fabio Arcidiacono.
@@ -50,7 +51,31 @@ public class IdsTest {
         em.persist(phone);
         Assert.assertNotNull(phone.getId());
 
-        //TODO .find() .merge() .delete() and SELECT
+        String phnId = phone.getId();
+        clear();
+
+        print("read");
+        Phone foundPhone = em.find(Phone.class, phnId);
+        Assert.assertNotNull(foundPhone);
+        Assert.assertEquals(phnId, foundPhone.getId());
+        Assert.assertEquals((Long) 123456789L, foundPhone.getNumber());
+
+        print("update");
+        foundPhone.setNumber(987654321L);
+        em.merge(foundPhone);
+
+        clear();
+
+        TypedQuery<Phone> query = em.createQuery("SELECT p FROM Phone p WHERE p.id = :id", Phone.class);
+        foundPhone = query.setParameter("id", phnId).getSingleResult();
+        Assert.assertNotNull(foundPhone);
+        Assert.assertEquals(phnId, foundPhone.getId());
+        Assert.assertEquals((Long) 987654321L, foundPhone.getNumber());
+
+        print("delete");
+        em.remove(foundPhone);
+        foundPhone = em.find(Phone.class, phnId);
+        Assert.assertNull(foundPhone);
     }
 
     @Test
@@ -63,8 +88,30 @@ public class IdsTest {
         Assert.assertNotNull(phone.getId());
         Assert.assertEquals("phone 1", phone.getId());
 
-        //TODO .find() .merge() .delete() and SELECT
+        clear();
 
+        print("read");
+        PhoneString foundPhone = em.find(PhoneString.class, "phone 1");
+        Assert.assertNotNull(foundPhone);
+        Assert.assertEquals("phone 1", foundPhone.getId());
+        Assert.assertEquals((Long) 123456789L, foundPhone.getNumber());
+
+        print("update");
+        foundPhone.setNumber(987654321L);
+        em.merge(foundPhone);
+
+        clear();
+
+        TypedQuery<PhoneString> query = em.createQuery("SELECT p FROM PhoneString p WHERE p.id = :id", PhoneString.class);
+        foundPhone = query.setParameter("id", "phone 1").getSingleResult();
+        Assert.assertNotNull(foundPhone);
+        Assert.assertEquals("phone 1", foundPhone.getId());
+        Assert.assertEquals((Long) 987654321L, foundPhone.getNumber());
+
+        print("delete");
+        em.remove(foundPhone);
+        foundPhone = em.find(PhoneString.class, "phone 1");
+        Assert.assertNull(foundPhone);
     }
 
     @Test
@@ -77,8 +124,30 @@ public class IdsTest {
         Assert.assertNotNull(phone.getId());
         Assert.assertEquals((Long) 1L, phone.getId());
 
-        //TODO .find() .merge() .delete() and SELECT
+        clear();
 
+        print("read");
+        PhoneLong foundPhone = em.find(PhoneLong.class, 1L);
+        Assert.assertNotNull(foundPhone);
+        Assert.assertEquals((Long) 1L, foundPhone.getId());
+        Assert.assertEquals((Long) 123456789L, foundPhone.getNumber());
+
+        print("update");
+        foundPhone.setNumber(987654321L);
+        em.merge(foundPhone);
+
+        clear();
+
+        TypedQuery<PhoneLong> query = em.createQuery("SELECT p FROM PhoneLong p WHERE p.id = :id", PhoneLong.class);
+        foundPhone = query.setParameter("id", 1L).getSingleResult();
+        Assert.assertNotNull(foundPhone);
+        Assert.assertEquals((Long) 1L, foundPhone.getId());
+        Assert.assertEquals((Long) 987654321L, foundPhone.getNumber());
+
+        print("delete");
+        em.remove(foundPhone);
+        foundPhone = em.find(PhoneLong.class, 1L);
+        Assert.assertNull(foundPhone);
     }
 
     @Test
