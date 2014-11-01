@@ -22,7 +22,6 @@ import com.impetus.kundera.property.PropertyAccessorHelper;
 import com.impetus.kundera.property.accessor.EnumAccessor;
 import it.polimi.client.datastore.query.DatastoreQuery;
 import it.polimi.client.datastore.query.QueryBuilder;
-import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,15 +69,6 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     public Class<DatastoreQuery> getQueryImplementor() {
         return DatastoreQuery.class;
     }
-
-    /* TODO decide
-     *
-     * 3. set indexes in embedded entities?
-     *    maybe use annotation @Index / @Indexed if some fields will not be queried
-     *
-     * 4. test JPA inheritance (CRUD and Queries)
-     *
-     */
 
     /*---------------------------------------------------------------------------------*/
     /*----------------------------- PERSIST OPERATIONS -------------------------------*/
@@ -215,33 +205,14 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         String inverseJoinColumnName = joinTableData.getInverseJoinColumnName();
         Map<Object, Set<Object>> joinTableRecords = joinTableData.getJoinTableRecords();
 
-        // TODO cannot use this, in getColumnsById and findIdsByColumn not able to get entities class
-        // Class joinColumnClass = joinTableData.getEntityClass();
-        // Class inverseJoinColumnClass = null;
-        // EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, joinColumnClass);
-        // for (Relation relation : entityMetadata.getRelations()) {
-        //      if (relation.isRelatedViaJoinTable() && relation.getJoinTableMetadata().getJoinTableName().equals(joinTableName)) {
-        //          inverseJoinColumnClass = relation.getTargetEntity();
-        //          break;
-        //      }
-        // }
-        // if (inverseJoinColumnClass == null) {
-        //      throw new KunderaException("Cannot find ManyToMany relation in " + joinColumnClass);
-        // }
-
         for (Object owner : joinTableRecords.keySet()) {
             Set<Object> children = joinTableRecords.get(owner);
-            //Key ownerKey = createKey(joinColumnClass.getSimpleName(), owner);
             for (Object child : children) {
-                //Key childKey = createKey(inverseJoinColumnClass.getSimpleName(), child);
                 /* let datastore generate ID for the entity */
                 Entity gaeEntity = DatastoreUtils.createDatastoreEntity(joinTableName);
-                // gaeEntity.setProperty(joinColumnName, ownerKey);
                 gaeEntity.setProperty(joinColumnName, owner);
-                // gaeEntity.setProperty(inverseJoinColumnName, childKey);
                 gaeEntity.setProperty(inverseJoinColumnName, child);
                 datastore.put(gaeEntity);
-
                 System.out.println(gaeEntity);
             }
         }
@@ -379,30 +350,30 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         }
     }
 
+    /*
+     * Implicitly it gets invoked, when kundera.indexer.class or lucene.home.dir is configured.
+     * Means to use custom indexer for secondary indexes.
+     * This method can also be very helpful to find rows for all primary keys! as with
+     * em.getDelegate() you can get a handle of client object and can simply invoke findAll().
+     */
     @Override
     public <E> List<E> findAll(Class<E> entityClass, String[] columnsToSelect, Object... keys) {
         System.out.println("DatastoreClient.findAll");
         System.out.println("entityClass = [" + entityClass + "], columnsToSelect = [" + columnsToSelect + "], keys = [" + keys + "]");
 
-        // TODO review this, use columnsToSelect?
-        // List results = new ArrayList();
-        // for (Object key : keys) {
-        //     Object object = this.find(entityClass, key);
-        //     if (object != null) {
-        //         results.add(object);
-        //     }
-        // }
-        // return results;
-
-        /**
-         * Implicitly it gets invoked, when kundera.indexer.class or lucene.home.dir is configured.
-         * Means to use custom indexer for secondary indexes.
-         * This method can also be very helpful to find rows for all primary keys! as with
-         * em.getDelegate() you can get a handle of client object and can simply invoke findAll.
-         */
-        throw new NotImplementedException();
+        List results = new ArrayList();
+        for (Object key : keys) {
+            Object object = this.find(entityClass, key);
+            if (object != null) {
+                results.add(object);
+            }
+        }
+        return results;
     }
 
+    /*
+     * It can be ignored, It was in place to purely support Cassandra's super columns.
+     */
     @Override
     public <E> List<E> find(Class<E> entityClass, Map<String, String> embeddedColumnMap) {
         throw new UnsupportedOperationException("Not supported in " + this.getClass().getSimpleName());
@@ -461,18 +432,6 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         if (!entities.isEmpty()) {
             for (Entity entity : entities) {
                 System.out.println("\t" + entity.getProperty(columnName));
-                /*
-                 * TODO handle this case
-                 * se qui si prova a fare una get(kind, entity.getProperty(columnName))
-                 * e viene ritornato null, c'è una broken reference, cioè un employee
-                 * in relazione con un project che non esiste più, se non sia fa niente
-                 * employee.getProjects() avrà un elemento a null.
-                 * Bisognerebbe eliminare la riga dalla tabella di join se qui la get
-                 * ritorna null.
-                 * per farlo però serve il Kind, bisognerebbe salvare (dappertutto)
-                 * al posto che solo l'id, la chiave come valore della relazione nel database.
-                 *
-                 */
                 results.add((E) entity.getProperty(columnName));
             }
         }

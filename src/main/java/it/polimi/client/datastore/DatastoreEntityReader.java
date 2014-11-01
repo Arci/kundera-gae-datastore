@@ -25,12 +25,12 @@ public class DatastoreEntityReader extends AbstractEntityReader implements Entit
         this.kunderaQuery = kunderaQuery;
     }
 
-    /**
+    /*
      * This is used by Query implementor to populate relationship entities into their parent entity.
      */
     @Override
     public List<EnhanceEntity> populateRelation(EntityMetadata m, Client client, int maxResults) {
-        throw new UnsupportedOperationException("Method supported not required for Datastore");
+        throw new UnsupportedOperationException("Method not required for Datastore");
     }
 
     @Override
