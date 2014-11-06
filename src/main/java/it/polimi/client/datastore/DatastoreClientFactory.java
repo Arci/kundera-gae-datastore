@@ -101,9 +101,6 @@ public class DatastoreClientFactory extends GenericClientFactory {
         if (indexManager != null) {
             indexManager.close();
         }
-        if (schemaManager != null) {
-            schemaManager.dropSchema();
-        }
         if (installer != null) {
             System.out.println("\nUninstall remote API connection\n");
             installer.uninstall();

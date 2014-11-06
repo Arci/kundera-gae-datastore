@@ -25,6 +25,6 @@ public class PhoneOTO {
 
     /* bidirectional one to one */
     @OneToOne(mappedBy = "phone")
-    //@OneToOne @JoinColumn(name = "EMPLOYEE_ID") TODO or PHONE_ID??
+    //@OneToOne @JoinColumn(name = "EMPLOYEE_ID") TODO or PHONE_ID?? inverse one to one
     private Employee employee;
 }
