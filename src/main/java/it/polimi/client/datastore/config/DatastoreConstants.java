@@ -1,6 +1,9 @@
 package it.polimi.client.datastore.config;
 
 /**
+ * Constants defining properties that can be specified in
+ * datastore specific property file.
+ *
  * @author Fabio Arcidiacono.
  */
 public class DatastoreConstants {

@@ -16,7 +16,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * Provide support for automatic schema generation through "kundera_ddl_auto_prepare" property in persistence.xml.
+ *
  * @author Fabio Arcidiacono.
+ * @see com.impetus.kundera.configure.schema.api.AbstractSchemaManager
+ * @see com.impetus.kundera.configure.schema.api.SchemaManager
  */
 public class DatastoreSchemaManager extends AbstractSchemaManager implements SchemaManager {
 
@@ -24,20 +28,13 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
     private DatastoreService datastore;
     private static final Logger logger = LoggerFactory.getLogger(DatastoreSchemaManager.class);
 
-    /**
-     * Initialise with configured client factory.
-     *
-     * @param clientFactory      specific client factory.
-     * @param externalProperties external properties
-     * @param kunderaMetadata    kundera metadata
-     */
     public DatastoreSchemaManager(String clientFactory, Map<String, Object> externalProperties, EntityManagerFactoryImpl.KunderaMetadata kunderaMetadata) {
         super(clientFactory, externalProperties, kunderaMetadata);
     }
 
     /*
      * Need re-implementation because AbstractSchemaManager.exportSchema()
-     * do unsafe split on hostName so if is null a NullPointerException is thrown and
+     * do unsafe split on hostName so if it is null a NullPointerException is thrown and
      * no DDL can be done over local Datastore instance
      */
     @Override
@@ -129,8 +126,8 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
     @Override
     protected void validate(List<TableInfo> tablesInfo) {
         /*
-         * cannot validate since query over not existent Kind will return empty,
-         * does not throws exceptions
+         * cannot validate since query over not existent Kinds will return empty,
+         * does not throws exceptions.
          */
         throw new UnsupportedOperationException("DDL validate is unsupported for Datastore");
     }
@@ -150,7 +147,7 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
     protected void create(List<TableInfo> tableInfo) {
         /* no need to create schema, tables are created when first entity is persisted */
         dropSchema();
-        unistall();
+        uninstall();
     }
 
     /*
@@ -159,12 +156,12 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
     @Override
     protected void create_drop(List<TableInfo> tableInfo) {
         create(tableInfo);
-        unistall();
+        uninstall();
     }
 
-    /**
-     * Method required to drop auto create schema, in case of schema operation as
-     * {create-drop},
+    /*
+     * Method required to drop auto create schema, in case
+     * of schema operation as {create-drop}.
      */
     @Override
     public void dropSchema() {
@@ -183,7 +180,7 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
         return true;
     }
 
-    private void unistall() {
+    private void uninstall() {
         if (installer != null) {
             installer.uninstall();
         }

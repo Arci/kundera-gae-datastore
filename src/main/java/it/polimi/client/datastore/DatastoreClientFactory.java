@@ -22,8 +22,10 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
+ * Used by Kundera to instantiate the Client.
+ *
  * @author Fabio Arcidiacono.
- *         <p>Used by Kundera to instantiate the Client.</p>
+ * @see com.impetus.kundera.loader.GenericClientFactory
  */
 public class DatastoreClientFactory extends GenericClientFactory {
 

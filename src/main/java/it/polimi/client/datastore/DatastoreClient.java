@@ -33,8 +33,13 @@ import java.lang.reflect.Field;
 import java.util.*;
 
 /**
+ * The gateway to CRUD operations on database, except for queries.
+ *
  * @author Fabio Arcidiacono.
- *         <p>The gateway to CRUD operations on database, except for queries.</p>
+ * @see com.impetus.kundera.client.ClientBase
+ * @see com.impetus.kundera.client.Client
+ * @see it.polimi.client.datastore.query.DatastoreQuery
+ * @see com.impetus.kundera.generator.AutoGenerator
  */
 public class DatastoreClient extends ClientBase implements Client<DatastoreQuery>, AutoGenerator {
 

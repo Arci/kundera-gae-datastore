@@ -16,13 +16,24 @@ import javax.persistence.metamodel.EntityType;
 import java.util.*;
 
 /**
+ * Helpful methods to translate from {@link com.impetus.kundera.query.KunderaQuery}
+ * to {@link com.google.appengine.api.datastore.Query}.
+ *
  * @author Fabio Arcidiacono.
+ * @see com.impetus.kundera.query.KunderaQuery
+ * @see com.google.appengine.api.datastore.Query
  */
 public class QueryBuilder {
 
     private Query query;
     private String kind;
+    /**
+     * true if {@link EntityType} of the query holds relationships with other entities
+     */
     private boolean holdRelationships;
+    /**
+     * true if the select query is different from "SELECT *"
+     */
     private boolean isProjectionQuery;
     private Map<String, Class> projections;
     private final EntityMetadata entityMetadata;
@@ -62,6 +73,16 @@ public class QueryBuilder {
         return this;
     }
 
+    /**
+     * Add multiple projections to the query.
+     *
+     * @param columns array of column names on which add a projection.
+     *
+     * @return this, for chaining.
+     *
+     * @throws com.impetus.kundera.KunderaException if Java type is not found for a column.
+     * @see com.google.appengine.api.datastore.PropertyProjection
+     */
     public QueryBuilder addProjections(String[] columns) {
         if (columns.length != 0) {
             this.isProjectionQuery = true;
@@ -79,12 +100,32 @@ public class QueryBuilder {
         return this;
     }
 
+    /**
+     * Add a projection to the query.
+     *
+     * @param column     the column name.
+     * @param columnType Java type of the column.
+     *
+     * @return this, for chaining.
+     *
+     * @see com.google.appengine.api.datastore.PropertyProjection
+     */
     public QueryBuilder addProjection(String column, Class columnType) {
         this.projections.put(column, columnType);
         this.query.addProjection(new PropertyProjection(column, columnType));
         return this;
     }
 
+    /**
+     * Add multiple filters to the query.
+     *
+     * @param filterClauseQueue filter clause queue from {@link com.impetus.kundera.query.KunderaQuery}.
+     *
+     * @return this, for chaining.
+     *
+     * @see com.impetus.kundera.query.KunderaQuery.FilterClause
+     * @see com.google.appengine.api.datastore.Query.Filter
+     */
     public QueryBuilder addFilters(Queue filterClauseQueue) {
         boolean isComposite = false;
         String composeOperator = null;
@@ -108,11 +149,30 @@ public class QueryBuilder {
         return this;
     }
 
+    /**
+     * Add a filters to the query.
+     *
+     * @param propertyFilter datastore {@link com.google.appengine.api.datastore.Query.Filter}.
+     *
+     * @return this, for chaining.
+     *
+     * @see com.google.appengine.api.datastore.Query.Filter
+     */
     public QueryBuilder addFilter(Query.Filter propertyFilter) {
         this.query.setFilter(propertyFilter);
         return this;
     }
 
+    /**
+     * Add orderings to the query.
+     *
+     * @param ordering list of {@link com.impetus.kundera.query.KunderaQuery.SortOrdering}.
+     *
+     * @return this, for chaining.
+     *
+     * @see com.impetus.kundera.query.KunderaQuery.SortOrder
+     * @see com.google.appengine.api.datastore.Query.SortDirection
+     */
     public QueryBuilder addOrderings(List<KunderaQuery.SortOrdering> ordering) {
         if (ordering != null && !ordering.isEmpty()) {
             for (KunderaQuery.SortOrdering order : ordering) {
@@ -136,6 +196,16 @@ public class QueryBuilder {
         return this;
     }
 
+    /**
+     * Add an order to the query.
+     *
+     * @param direction     datastore {@link com.google.appengine.api.datastore.Query.SortDirection}.
+     * @param jpaColumnName jpa name mapping for the column.
+     *
+     * @return this, for chaining.
+     *
+     * @see com.google.appengine.api.datastore.Query.SortDirection
+     */
     private QueryBuilder addOrdering(Query.SortDirection direction, String jpaColumnName) {
         this.query.addSort(jpaColumnName, direction);
         return this;
