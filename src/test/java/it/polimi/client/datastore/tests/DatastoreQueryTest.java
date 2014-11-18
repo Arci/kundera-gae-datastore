@@ -1,45 +1,19 @@
-package it.polimi.client.datastore.query;
+package it.polimi.client.datastore.tests;
 
-import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
-import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
 import it.polimi.client.datastore.entities.Employee;
 import it.polimi.client.datastore.entities.PhoneEnum;
 import it.polimi.client.datastore.entities.PhoneType;
-import org.junit.After;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 
-import javax.persistence.*;
+import javax.persistence.Query;
+import javax.persistence.TypedQuery;
 import java.util.List;
 
 /**
  * @author Fabio Arcidiacono.
  */
-public class DatastoreQueryTest {
-
-    private LocalDatastoreServiceTestConfig datastoreConfig = new LocalDatastoreServiceTestConfig();
-    private final LocalServiceTestHelper helper = new LocalServiceTestHelper(datastoreConfig);
-    private static final String PERSISTENCE_UNIT = "pu";
-    private EntityManagerFactory emf;
-    private EntityManager em;
-
-    @Before
-    public void setUp() {
-        helper.setUp();
-        emf = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT);
-        if (em != null && em.isOpen()) {
-            em.close();
-        }
-        em = emf.createEntityManager();
-    }
-
-    @After
-    public void tearDown() {
-        em.close();
-        emf.close();
-        helper.tearDown();
-    }
+public class DatastoreQueryTest extends TestBase {
 
     @Test
     public void testSelectQuery() {
@@ -171,16 +145,5 @@ public class DatastoreQueryTest {
         List<Employee> allEmployees = query.getResultList();
         Assert.assertNotNull(allEmployees);
         Assert.assertTrue(allEmployees.isEmpty());
-    }
-
-    private void clear() {
-        em.clear();
-        print("clear entity manager");
-    }
-
-    private void print(String message) {
-        String delimiter = "-------------------------------------------------------";
-        String spacing = message.length() < 10 ? "\t\t\t\t\t\t" : message.length() < 20 ? "\t\t\t\t\t" : "\t\t\t\t";
-        System.out.println(delimiter + "\n" + spacing + message.toUpperCase() + "\n" + delimiter);
     }
 }
