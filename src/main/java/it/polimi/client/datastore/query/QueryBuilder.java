@@ -93,7 +93,7 @@ public class QueryBuilder {
                     addProjection(column, attribute.getJavaType());
                 } catch (NullPointerException npe) {
                     /* case attribute not found */
-                    throw new KunderaException("Cannot find Java type for  [" + column + "]");
+                    throw new KunderaException("Cannot find Java type for " + column + ": ", npe);
                 }
             }
         }
@@ -184,12 +184,10 @@ public class QueryBuilder {
                     addOrdering(direction, jpaColumnName);
                 } catch (IndexOutOfBoundsException iobex) {
                     /* case fail in split() */
-                    throw new KunderaException("Attribute [" + order.getColumnName() + "] " +
-                            "not found in entity class: " + getEntityClass());
+                    throw new KunderaException("Attribute " + order.getColumnName() + " not found in entity class " + getEntityClass() + ": ", iobex);
                 } catch (NullPointerException npe) {
                     /* case attribute not found */
-                    throw new KunderaException("Attribute [" + order.getColumnName() + "] " +
-                            "not found in entity class: " + getEntityClass());
+                    throw new KunderaException("Attribute " + order.getColumnName() + " not found in entity class " + getEntityClass() + ": ", npe);
                 }
             }
         }
@@ -219,7 +217,7 @@ public class QueryBuilder {
             return Query.CompositeFilterOperator.or(previousFilter,
                     propertyFilter);
         }
-        throw new KunderaException("Composition with [" + composeOperator + "] not supported by Datastore");
+        throw new KunderaException("Composition with " + composeOperator + " is not supported by Datastore");
     }
 
     private Query.Filter generatePropertyFilter(KunderaQuery.FilterClause filterClause) {
@@ -261,7 +259,7 @@ public class QueryBuilder {
         } else if (condition.equals("<=")) {
             return Query.FilterOperator.LESS_THAN_OR_EQUAL;
         }
-        throw new KunderaException("Condition [" + condition + "] not supported by Datastore");
+        throw new KunderaException("Condition " + condition + " is not supported by Datastore");
     }
 
     private Query.SortDirection parseOrdering(KunderaQuery.SortOrder order) {
@@ -270,6 +268,6 @@ public class QueryBuilder {
         } else if (order.equals(KunderaQuery.SortOrder.DESC)) {
             return Query.SortDirection.DESCENDING;
         }
-        throw new KunderaException("Ordering [" + order + "] not supported by Datastore");
+        throw new KunderaException("Ordering " + order + " is not supported by Datastore");
     }
 }

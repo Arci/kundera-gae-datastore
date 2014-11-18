@@ -48,9 +48,9 @@ public class DatastoreQuery extends QueryImpl {
      */
     @Override
     protected List<Object> populateEntities(EntityMetadata m, Client client) {
-        System.out.println("DatastoreQuery.populateEntities");
-        printQuery();
-
+        if (logger.isDebugEnabled()) {
+            printQuery();
+        }
         QueryBuilder builder = translateQuery(this.kunderaQuery, false);
         return ((DatastoreClient) client).executeQuery(builder);
     }
@@ -60,9 +60,9 @@ public class DatastoreQuery extends QueryImpl {
      */
     @Override
     protected List<Object> recursivelyPopulateEntities(EntityMetadata m, Client client) {
-        System.out.println("DatastoreQuery.recursivelyPopulateEntities");
-        printQuery();
-
+        if (logger.isDebugEnabled()) {
+            printQuery();
+        }
         QueryBuilder builder = translateQuery(this.kunderaQuery, true);
         List<Object> queryResults = ((DatastoreClient) client).executeQuery(builder);
         return setRelationEntities(queryResults, client, m);
@@ -73,9 +73,9 @@ public class DatastoreQuery extends QueryImpl {
      */
     @Override
     protected int onExecuteUpdate() {
-        System.out.println("DatastoreQuery.onExecuteUpdate");
-        printQuery();
-
+        if (logger.isDebugEnabled()) {
+            printQuery();
+        }
         return onUpdateDeleteEvent();
     }
 
@@ -99,7 +99,6 @@ public class DatastoreQuery extends QueryImpl {
      */
     @Override
     public Iterator iterate() {
-        System.out.println("DatastoreQuery.iterate");
         // TODO
         //return new ResultIterator(...)
         throw new NotImplementedException();
@@ -108,7 +107,7 @@ public class DatastoreQuery extends QueryImpl {
 
     @Override
     protected List findUsingLucene(EntityMetadata entityMetadata, Client client) {
-        throw new UnsupportedOperationException("findUsingLucene is currently unsupported for this client");
+        throw new UnsupportedOperationException("Find using Lucene is currently unsupported for this client");
     }
 
     /*---------------------------------------------------------------------------------*/

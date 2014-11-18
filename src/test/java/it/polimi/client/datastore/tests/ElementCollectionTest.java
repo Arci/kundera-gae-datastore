@@ -30,7 +30,6 @@ public class ElementCollectionTest extends TestBase {
         print("access streets");
         int counter = 3;
         for (String street : foundAddress.getStreets()) {
-            System.out.println(street);
             if (street.equals("Street 1") || street.equals("Street 2") || street.equals("Street 3")) {
                 counter--;
             }
@@ -52,7 +51,6 @@ public class ElementCollectionTest extends TestBase {
         print("access streets");
         counter = 3;
         for (String street : foundAddress.getStreets()) {
-            System.out.println(street);
             if (street.equals("Street 4") || street.equals("Street 5") || street.equals("Street 6")) {
                 counter--;
             }

@@ -5,8 +5,6 @@ import com.impetus.kundera.configure.ClientProperties;
 import com.impetus.kundera.configure.ClientProperties.DataStore;
 import com.impetus.kundera.configure.PropertyReader;
 import com.impetus.kundera.metadata.model.PersistenceUnitMetadata;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
@@ -20,7 +18,6 @@ import java.util.Map;
  */
 public class DatastorePropertyReader extends AbstractPropertyReader implements PropertyReader {
 
-    private static Logger logger = LoggerFactory.getLogger(DatastorePropertyReader.class);
     public static DatastoreSchemaMetadata dsm;
 
     public DatastorePropertyReader(Map externalProperties, PersistenceUnitMetadata puMetadata) {

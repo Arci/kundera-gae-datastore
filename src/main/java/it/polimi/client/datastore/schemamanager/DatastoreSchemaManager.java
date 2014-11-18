@@ -100,7 +100,6 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
 
     @Override
     protected boolean initiateClient() {
-        System.out.println("\nDatastoreSchemaManager.initiateClient");
         if (hosts != null && userName != null && password != null) {
             try {
                 RemoteApiOptions options = new RemoteApiOptions()
@@ -108,13 +107,13 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
                         .credentials(userName, password);
                 this.installer = new RemoteApiInstaller();
                 this.installer.install(options);
-                System.out.println("Connected to Datastore at " + hosts[0] + ":" + port);
+                logger.info("Connected to Datastore at " + hosts[0] + ":" + port);
             } catch (Exception e) {
-                System.out.println("Unable to connect to Datastore at " + hosts[0] + ":" + port + "; Caused by:" + e.getMessage());
-                throw new ClientLoaderException(e);
+                logger.debug("Unable to connect to Datastore at " + hosts[0] + ":" + port);
+                throw new ClientLoaderException("Unable to connect to Datastore at " + hosts[0] + ":" + port + "; Caused by:" + e.getMessage());
             }
         } else {
-            System.out.println("Get reference from local Datastore");
+            logger.info("Get reference from local Datastore");
         }
         this.datastore = DatastoreServiceFactory.getDatastoreService();
         return true;
@@ -165,14 +164,13 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
      */
     @Override
     public void dropSchema() {
-        System.out.println("\nDatastoreSchemaManager.dropSchema");
+        logger.debug("DatastoreSchemaManager.dropSchema");
         Query query = new Query().setKeysOnly();
         for (Entity entity : datastore.prepare(query).asList(FetchOptions.Builder.withDefaults())) {
-            System.out.println("\tdrop kind= [" + entity.getKind() + "], key =["
-                    + entity.getKey() + "]");
+            logger.debug("\tdrop kind= [" + entity.getKind() + "], key =[" + entity.getKey() + "]");
             datastore.delete(entity.getKey());
         }
-        System.out.printf("Schema dropped\n\n");
+        logger.info("Schema dropped");
     }
 
     @Override

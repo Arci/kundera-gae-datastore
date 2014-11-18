@@ -29,11 +29,15 @@ import java.util.Properties;
  */
 public class DatastoreClientFactory extends GenericClientFactory {
 
-    private static Logger logger = LoggerFactory.getLogger(DatastoreClientFactory.class);
+    private static Logger logger;
     private EntityReader reader;
     private SchemaManager schemaManager;
     private RemoteApiInstaller installer;
     private DatastoreService datastore;
+
+    static {
+        logger = LoggerFactory.getLogger(DatastoreClientFactory.class);
+    }
 
     @Override
     public void initialize(Map<String, Object> puProperties) {
@@ -46,9 +50,9 @@ public class DatastoreClientFactory extends GenericClientFactory {
 
     @Override
     protected Object createPoolOrConnection() {
-        PersistenceUnitMetadata persistenceUnitMetadata = kunderaMetadata.getApplicationMetadata()
-                .getPersistenceUnitMetadata(getPersistenceUnit());
-        Properties properties = persistenceUnitMetadata.getProperties();
+        String pu = getPersistenceUnit();
+        PersistenceUnitMetadata puMetadata = kunderaMetadata.getApplicationMetadata().getPersistenceUnitMetadata(pu);
+        Properties properties = puMetadata.getProperties();
         // String keyspace = null;
         String nodes = null;
         String port = null;
@@ -104,7 +108,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
             indexManager.close();
         }
         if (installer != null) {
-            System.out.println("\nUninstall remote API connection\n");
+            logger.debug("Uninstall remote API connection");
             installer.uninstall();
         }
         datastore = null;
@@ -137,25 +141,22 @@ public class DatastoreClientFactory extends GenericClientFactory {
     }
 
     private void initializeConnection(String nodes, String port, String username, String password) {
-        System.out.println("Trying to connect using remote API");
+        logger.debug("Trying to connect using remote API");
         int connection_port = DatastoreConstants.DEFAULT_PORT;
         if (port != null) {
             try {
                 connection_port = Integer.parseInt(port);
             } catch (NumberFormatException nfe) {
-                throw new ClientLoaderException("Invalid port [" + port + "]");
+                throw new ClientLoaderException("Invalid port " + port + ": ", nfe);
             }
         }
         try {
-            RemoteApiOptions options = new RemoteApiOptions()
-                    .server(nodes, connection_port)
-                    .credentials(username, password);
+            RemoteApiOptions options = new RemoteApiOptions().server(nodes, connection_port).credentials(username, password);
             this.installer = new RemoteApiInstaller();
             this.installer.install(options);
-            System.out.println("Connected to Datastore at " + nodes + ":" + connection_port);
+            logger.info("Connected to Datastore at " + nodes + ":" + connection_port);
         } catch (Exception e) {
-            System.out.println("Unable to connect to Datastore at " + nodes + ":" + connection_port + "; Caused by:" + e.getMessage());
-            throw new ClientLoaderException(e);
+            throw new ClientLoaderException("Unable to connect to Datastore at " + nodes + ":" + connection_port + ": ", e);
         }
     }
 
@@ -163,35 +164,35 @@ public class DatastoreClientFactory extends GenericClientFactory {
         Properties properties = getClientSpecificProperties();
         DatastoreServiceConfig config = DatastoreServiceConfig.Builder.withDefaults();
         if (properties != null) {
-            System.out.println("Initialize datastore with:");
+            logger.info("Initialize datastore with:");
             ReadPolicy readPolicy = parseReadPolicy(properties);
             Double deadline = ReadDeadline(properties);
             ImplicitTransactionManagementPolicy transactionPolicy = parseTransactionPolicy(properties);
             try {
                 if (readPolicy != null) {
                     config = DatastoreServiceConfig.Builder.withReadPolicy(readPolicy);
-                    System.out.println("\tread policy [" + readPolicy.getConsistency() + "]");
+                    logger.info("\tread policy [" + readPolicy.getConsistency() + "]");
                     if (deadline != null) {
                         config.deadline(deadline);
-                        System.out.println("\tdeadline [" + deadline + "]");
+                        logger.info("\tdeadline [" + deadline + "]");
                     }
                     if (transactionPolicy != null) {
                         config.implicitTransactionManagementPolicy(transactionPolicy);
-                        System.out.println("\ttransaction policy [" + transactionPolicy.name() + "]");
+                        logger.info("\ttransaction policy [" + transactionPolicy.name() + "]");
                     }
                 } else if (deadline != null) {
                     config = DatastoreServiceConfig.Builder.withDeadline(deadline);
-                    System.out.println("\tdeadline [" + deadline + "]");
+                    logger.info("\tdeadline [" + deadline + "]");
                     if (transactionPolicy != null) {
                         config.implicitTransactionManagementPolicy(transactionPolicy);
-                        System.out.println("\ttransaction policy [" + transactionPolicy.name() + "]");
+                        logger.info("\ttransaction policy [" + transactionPolicy.name() + "]");
                     }
                 } else if (transactionPolicy != null) {
                     config = DatastoreServiceConfig.Builder.withImplicitTransactionManagementPolicy(transactionPolicy);
-                    System.out.println("\ttransaction policy [" + transactionPolicy.name() + "]");
+                    logger.info("\ttransaction policy [" + transactionPolicy.name() + "]");
                 }
             } catch (Exception e) {
-                System.out.println("Some error occurred creating Datastore configuration; Caused by:" + e.getMessage());
+                throw new ClientLoaderException("Some error occurred creating Datastore configuration: ", e);
             }
         }
         return config;
@@ -203,7 +204,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
             try {
                 return Double.parseDouble(deadline);
             } catch (NumberFormatException nfe) {
-                throw new ClientLoaderException("invalid read deadline [" + deadline + "]");
+                throw new ClientLoaderException("Invalid read deadline " + deadline + ": ", nfe);
             }
         }
         return null;
@@ -216,7 +217,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
                 ReadPolicy.Consistency consistencyType = ReadPolicy.Consistency.valueOf(readPolicy.toUpperCase());
                 return new ReadPolicy(consistencyType);
             } catch (Exception e) {
-                throw new ClientLoaderException("Invalid read policy [" + readPolicy + "]");
+                throw new ClientLoaderException("Invalid read policy " + readPolicy + ": ", e);
             }
         }
         return null;
@@ -228,7 +229,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
             try {
                 return ImplicitTransactionManagementPolicy.valueOf(transactionPolicy.toUpperCase());
             } catch (Exception e) {
-                throw new ClientLoaderException("Invalid transaction policy [" + transactionPolicy + "]");
+                throw new ClientLoaderException("Invalid transaction policy " + transactionPolicy + ": ", e);
             }
         }
         return null;

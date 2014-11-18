@@ -2,10 +2,13 @@ package it.polimi.client.datastore.tests;
 
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
 import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -14,10 +17,11 @@ import javax.persistence.Persistence;
 /**
  * @author Fabio Arcidiacono.
  */
+@Slf4j
 public abstract class TestBase {
 
     /**
-     * gae testing tools
+     * GAE testing tools
      */
     private LocalDatastoreServiceTestConfig datastoreConfig = new LocalDatastoreServiceTestConfig();
     private final LocalServiceTestHelper helper = new LocalServiceTestHelper(datastoreConfig);
@@ -50,7 +54,7 @@ public abstract class TestBase {
     }
 
     /*---------------------------------------------------------------------------------*/
-    /*----------------------- PRINT UTILS, for debug purposes -------------------------*/
+    /*-------------------------- UTILS, for debug purposes ----------------------------*/
 
     protected void clear() {
         em.clear();
@@ -58,8 +62,12 @@ public abstract class TestBase {
     }
 
     protected void print(String message) {
-        String delimiter = "-------------------------------------------------------";
-        String spacing = message.length() < 10 ? "\t\t\t\t\t\t" : message.length() < 20 ? "\t\t\t\t\t" : "\t\t\t\t";
-        System.out.println(delimiter + "\n" + spacing + message.toUpperCase() + "\n" + delimiter);
+        if (log.isDebugEnabled()) {
+            String delimiter = "--------------------------------------------------------------------";
+            String spacing = message.length() <= 10 ? "\t\t\t\t\t\t\t  " : "\t\t\t\t\t\t";
+            log.debug("\n" + delimiter + "\n" + spacing + message.toUpperCase() + "\n" + delimiter);
+        } else {
+            log.info("\t\t" + message.toUpperCase() + "\n");
+        }
     }
 }
