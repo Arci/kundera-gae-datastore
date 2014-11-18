@@ -24,9 +24,13 @@ import java.util.Map;
  */
 public class DatastoreSchemaManager extends AbstractSchemaManager implements SchemaManager {
 
+    private static final Logger logger;
     private RemoteApiInstaller installer;
     private DatastoreService datastore;
-    private static final Logger logger = LoggerFactory.getLogger(DatastoreSchemaManager.class);
+
+    static {
+        logger = LoggerFactory.getLogger(DatastoreSchemaManager.class);
+    }
 
     public DatastoreSchemaManager(String clientFactory, Map<String, Object> externalProperties, EntityManagerFactoryImpl.KunderaMetadata kunderaMetadata) {
         super(clientFactory, externalProperties, kunderaMetadata);
@@ -109,8 +113,7 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
                 this.installer.install(options);
                 logger.info("Connected to Datastore at " + hosts[0] + ":" + port);
             } catch (Exception e) {
-                logger.debug("Unable to connect to Datastore at " + hosts[0] + ":" + port);
-                throw new ClientLoaderException("Unable to connect to Datastore at " + hosts[0] + ":" + port + "; Caused by:" + e.getMessage());
+                throw new ClientLoaderException("Unable to connect to Datastore at " + hosts[0] + ":" + port + ": ", e);
             }
         } else {
             logger.info("Get reference from local Datastore");
@@ -164,7 +167,6 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
      */
     @Override
     public void dropSchema() {
-        logger.debug("DatastoreSchemaManager.dropSchema");
         Query query = new Query().setKeysOnly();
         for (Entity entity : datastore.prepare(query).asList(FetchOptions.Builder.withDefaults())) {
             logger.debug("\tdrop kind= [" + entity.getKind() + "], key =[" + entity.getKey() + "]");
