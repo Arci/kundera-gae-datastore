@@ -1,5 +1,6 @@
 package it.polimi.client.datastore.tests;
 
+import com.impetus.kundera.KunderaException;
 import it.polimi.client.datastore.entities.Employee;
 import it.polimi.client.datastore.entities.PhoneEnum;
 import it.polimi.client.datastore.entities.PhoneType;
@@ -111,6 +112,158 @@ public class DatastoreQueryTest extends TestBase {
         Assert.assertEquals(2, allEmployees.size());
         Assert.assertTrue(allEmployees.get(0).getSalary().equals(456L));
         Assert.assertTrue(allEmployees.get(1).getSalary().equals(123L));
+    }
+
+    @Test
+    public void testComparisonOperators() {
+        print("create");
+        Employee employee1 = new Employee();
+        employee1.setName("Fabio");
+        employee1.setSalary(123L);
+        em.persist(employee1);
+
+        Employee employee2 = new Employee();
+        employee2.setName("Crizia");
+        employee2.setSalary(456L);
+        em.persist(employee2);
+
+        String emp1Id = employee1.getId();
+        String emp2Id = employee2.getId();
+        clear();
+
+        print("greater than");
+        TypedQuery<Employee> query = em.createQuery("SELECT e FROM Employee e WHERE e.salary > :s", Employee.class);
+        List<Employee> foundEmployees = query.setParameter("s", 123L).getResultList();
+        Assert.assertNotNull(foundEmployees);
+        Assert.assertEquals(1, foundEmployees.size());
+        Assert.assertNotNull(foundEmployees.get(0));
+        Assert.assertEquals(emp2Id, foundEmployees.get(0).getId());
+        Assert.assertEquals("Crizia", foundEmployees.get(0).getName());
+        Assert.assertEquals((Long) 456L, foundEmployees.get(0).getSalary());
+
+        print("greater than or equal");
+        query = em.createQuery("SELECT e FROM Employee e WHERE e.salary >= :s", Employee.class);
+        foundEmployees = query.setParameter("s", 123L).getResultList();
+        Assert.assertNotNull(foundEmployees);
+        Assert.assertEquals(2, foundEmployees.size());
+        int toCheck = 2;
+        for (Employee emp : foundEmployees) {
+            Assert.assertNotNull(emp.getId());
+            if (emp.getId().equals(emp1Id)) {
+                toCheck--;
+                Assert.assertEquals("Fabio", emp.getName());
+                Assert.assertEquals((Long) 123L, emp.getSalary());
+            } else if (emp.getId().equals(emp2Id)) {
+                toCheck--;
+                Assert.assertEquals("Crizia", emp.getName());
+                Assert.assertEquals((Long) 456L, emp.getSalary());
+            }
+        }
+        Assert.assertEquals(0, toCheck);
+
+        print("less than");
+        query = em.createQuery("SELECT e FROM Employee e WHERE e.salary < :s", Employee.class);
+        foundEmployees = query.setParameter("s", 456L).getResultList();
+        Assert.assertNotNull(foundEmployees);
+        Assert.assertEquals(1, foundEmployees.size());
+        Assert.assertNotNull(foundEmployees.get(0));
+        Assert.assertEquals(emp1Id, foundEmployees.get(0).getId());
+        Assert.assertEquals("Fabio", foundEmployees.get(0).getName());
+        Assert.assertEquals((Long) 123L, foundEmployees.get(0).getSalary());
+
+        print("less than or equal");
+        query = em.createQuery("SELECT e FROM Employee e WHERE e.salary <= :s", Employee.class);
+        foundEmployees = query.setParameter("s", 456L).getResultList();
+        Assert.assertNotNull(foundEmployees);
+        Assert.assertEquals(2, foundEmployees.size());
+        toCheck = 2;
+        for (Employee emp : foundEmployees) {
+            Assert.assertNotNull(emp.getId());
+            if (emp.getId().equals(emp1Id)) {
+                toCheck--;
+                Assert.assertEquals("Fabio", emp.getName());
+                Assert.assertEquals((Long) 123L, emp.getSalary());
+            } else if (emp.getId().equals(emp2Id)) {
+                toCheck--;
+                Assert.assertEquals("Crizia", emp.getName());
+                Assert.assertEquals((Long) 456L, emp.getSalary());
+            }
+        }
+        Assert.assertEquals(0, toCheck);
+    }
+
+    @Test
+    public void testOperators() {
+        print("create");
+        Employee employee1 = new Employee();
+        employee1.setName("Fabio");
+        employee1.setSalary(123L);
+        em.persist(employee1);
+
+        Employee employee2 = new Employee();
+        employee2.setName("Crizia");
+        employee2.setSalary(345L);
+        em.persist(employee2);
+
+        Employee employee3 = new Employee();
+        employee3.setName("Giuseppe");
+        employee3.setSalary(567L);
+        em.persist(employee3);
+
+        Employee employee4 = new Employee();
+        employee4.setName("Cinzia");
+        employee4.setSalary(789L);
+        em.persist(employee4);
+
+        String emp1Id = employee1.getId();
+        String emp2Id = employee2.getId();
+        String emp3Id = employee3.getId();
+        clear();
+
+        print("limit");
+        TypedQuery<Employee> query = em.createQuery("SELECT e FROM Employee e", Employee.class);
+        List<Employee> foundEmployees = query.setMaxResults(2).getResultList();
+        Assert.assertNotNull(foundEmployees);
+        Assert.assertEquals(2, foundEmployees.size());
+        for (Employee emp : foundEmployees) {
+            System.out.println(emp);
+        }
+
+        print("between");
+        query = em.createQuery("SELECT e FROM Employee e WHERE e.salary BETWEEN :start AND :end", Employee.class);
+        foundEmployees = query.setParameter("start", 123L).setParameter("end", 567L).getResultList();
+        Assert.assertNotNull(foundEmployees);
+        Assert.assertEquals(3, foundEmployees.size());
+        int toCheck = 3;
+        for (Employee emp : foundEmployees) {
+            Assert.assertNotNull(emp.getId());
+            if (emp.getId().equals(emp1Id)) {
+                toCheck--;
+                Assert.assertEquals("Fabio", emp.getName());
+                Assert.assertEquals((Long) 123L, emp.getSalary());
+            } else if (emp.getId().equals(emp2Id)) {
+                toCheck--;
+                Assert.assertEquals("Crizia", emp.getName());
+                Assert.assertEquals((Long) 345L, emp.getSalary());
+            } else if (emp.getId().equals(emp3Id)) {
+                toCheck--;
+                Assert.assertEquals("Giuseppe", emp.getName());
+                Assert.assertEquals((Long) 567L, emp.getSalary());
+            }
+        }
+        Assert.assertEquals(0, toCheck);
+
+        print("in");
+        query = em.createQuery("SELECT e FROM Employee e WHERE e.name IN ('Fabio', 'Crizia')", Employee.class);
+        foundEmployees = query.getResultList();
+        Assert.assertNotNull(foundEmployees);
+        Assert.assertEquals(2, foundEmployees.size());
+
+        /* LIKE operator is not supported */
+        query = em.createQuery("SELECT e FROM Employee e WHERE e.name LIKE :name", Employee.class);
+        query.setParameter("name", "Fabio");
+        thrown.expect(KunderaException.class);
+        query.getResultList();
     }
 
     @Test

@@ -27,25 +27,23 @@ public class QueryBuilder {
 
     private Query query;
     private String kind;
-    /**
-     * true if {@link EntityType} of the query holds relationships with other entities
-     */
+    private final int limit;
+    private final EntityType entityType;
+    private final EntityMetadata entityMetadata;
+    /** true if {@link EntityType} of the query holds relationships with other entities */
     private boolean holdRelationships;
-    /**
-     * true if the select query is different from "SELECT *"
-     */
+    /** true if the select query is different from "SELECT *" */
     private boolean isProjectionQuery;
     private Map<String, Class> projections;
-    private final EntityMetadata entityMetadata;
-    private final EntityType entityType;
 
-    public QueryBuilder(EntityMetadata entityMetadata, EntityType entityType, boolean holdRelationships) {
+    public QueryBuilder(EntityMetadata entityMetadata, EntityType entityType, boolean holdRelationships, int maxResults) {
         this.entityMetadata = entityMetadata;
         this.entityType = entityType;
         this.kind = getEntityClass().getSimpleName();
         this.holdRelationships = holdRelationships;
         this.isProjectionQuery = false;
         this.projections = new HashMap<String, Class>();
+        this.limit = maxResults;
     }
 
     public Query getQuery() {
@@ -66,6 +64,10 @@ public class QueryBuilder {
 
     public Set<String> getProjections() {
         return this.projections.keySet();
+    }
+
+    public int getLimit() {
+        return this.limit;
     }
 
     public QueryBuilder setFrom(Class entityClass) {
@@ -237,10 +239,33 @@ public class QueryBuilder {
             /* filter on entity ID */
             Key key = DatastoreUtils.createKey(this.kind, filterValue);
             return new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, operator, key);
+        } else if (operator.equals(Query.FilterOperator.IN)) {
+            /* handle filterValue in case of IN operator*/
+            if (filterValue instanceof String) {
+                filterValue = toCollection((String) filterValue);
+            } else if (!(filterValue instanceof Collection)) {
+                throw new KunderaException("For IN operator value must be either a Collection or a String like ('a', 'b', 'c')");
+            }
+            return new Query.FilterPredicate(property, operator, filterValue);
         } else {
             /* filter on entity filed */
             return new Query.FilterPredicate(property, operator, filterValue);
         }
+    }
+
+    /*
+     * since Kundera 2.14 works only for queries like "WHERE e.name IN ('Fabio', 'Crizia')"
+     * transform the string like ('Fabio', 'Crizia') to Collection
+     */
+    private Collection<Object> toCollection(String filterValue) {
+        filterValue = filterValue.substring(1, filterValue.length() - 1); //remove parenthesis ()
+        filterValue = filterValue.replace("'", "").trim();
+        String[] elements = filterValue.split(",");
+        List<Object> trimmed = new ArrayList<Object>();
+        for (String el : elements) {
+            trimmed.add(el.trim());
+        }
+        return trimmed;
     }
 
     private Query.FilterOperator parseCondition(String condition) {
@@ -259,6 +284,7 @@ public class QueryBuilder {
         } else if (condition.equals("<=")) {
             return Query.FilterOperator.LESS_THAN_OR_EQUAL;
         }
+        /* BETWEEN is automatically converted in (X >= K1 AND X <= K2) by Kundera */
         throw new KunderaException("Condition " + condition + " is not supported by Datastore");
     }
 

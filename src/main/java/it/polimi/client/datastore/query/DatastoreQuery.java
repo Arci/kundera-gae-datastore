@@ -85,7 +85,7 @@ public class DatastoreQuery extends QueryImpl {
                 entityMetadata.getPersistenceUnit());
         EntityType entityType = metaModel.entity(entityMetadata.getEntityClazz());
 
-        QueryBuilder builder = new QueryBuilder(entityMetadata, entityType, holdRelationships);
+        QueryBuilder builder = new QueryBuilder(entityMetadata, entityType, holdRelationships, super.getMaxResults());
 
         builder.setFrom(kunderaQuery.getEntityClass())
                 .addProjections(super.getColumns(kunderaQuery.getResult(), entityMetadata))
@@ -126,7 +126,8 @@ public class DatastoreQuery extends QueryImpl {
                 "getResults = " + resultString() + "\n\t" +
                 "columnsToSelect = " + columnsString() + "\n\t" +
                 "updateQueue = " + updateClauseQueueString() + "\n\t" +
-                "filterQueue = " + this.kunderaQuery.getFilterClauseQueue() + "\n]\n");
+                "filterQueue = " + this.kunderaQuery.getFilterClauseQueue() + "\n\t" +
+                "limit = " + super.getMaxResults() + "\n]\n");
     }
 
     private String resultString() {

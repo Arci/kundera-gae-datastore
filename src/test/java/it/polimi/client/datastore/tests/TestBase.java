@@ -7,8 +7,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -20,15 +18,11 @@ import javax.persistence.Persistence;
 @Slf4j
 public abstract class TestBase {
 
-    /**
-     * GAE testing tools
-     */
+    /** GAE testing tools */
     private LocalDatastoreServiceTestConfig datastoreConfig = new LocalDatastoreServiceTestConfig();
     private final LocalServiceTestHelper helper = new LocalServiceTestHelper(datastoreConfig);
 
-    /**
-     * JPA stuff
-     */
+    /** JPA stuff */
     private static final String PERSISTENCE_UNIT = "pu";
     private EntityManagerFactory emf;
     protected EntityManager em;
@@ -67,7 +61,7 @@ public abstract class TestBase {
             String spacing = message.length() <= 10 ? "\t\t\t\t\t\t\t  " : "\t\t\t\t\t\t";
             log.debug("\n" + delimiter + "\n" + spacing + message.toUpperCase() + "\n" + delimiter);
         } else {
-            log.info("\t\t" + message.toUpperCase() + "\n");
+            log.info("\t\t" + message.toUpperCase());
         }
     }
 }

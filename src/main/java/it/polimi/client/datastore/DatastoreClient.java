@@ -508,7 +508,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         logger.info(builder.getQuery().toString());
 
         List<Object> results = new ArrayList<Object>();
-        List<Entity> entities = getQueryResults(builder.getQuery());
+        List<Entity> entities = getQueryResults(builder.getQuery(), builder.getLimit());
         for (Entity entity : entities) {
             logger.debug(entity.toString());
             try {
@@ -541,5 +541,10 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
     private List<Entity> getQueryResults(Query query) {
         return datastore.prepare(query).asList(FetchOptions.Builder.withDefaults());
+    }
+
+    private List<Entity> getQueryResults(Query query, int limit) {
+        logger.info("set query result limit to: " + limit);
+        return datastore.prepare(query).asList(FetchOptions.Builder.withLimit(limit));
     }
 }
