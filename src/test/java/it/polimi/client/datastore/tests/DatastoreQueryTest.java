@@ -278,7 +278,7 @@ public class DatastoreQueryTest extends TestBase {
         clear();
 
         print("update");
-        TypedQuery<Employee> query = em.createQuery("UPDATE Employee SET salary = :s, name =:n2 WHERE name = :n", Employee.class);
+        TypedQuery<Employee> query = em.createQuery("UPDATE Employee e SET e.salary = :s, e.name = :n2 WHERE e.name = :n", Employee.class);
         int updated = query.setParameter("s", 789L).setParameter("n2", "Pippo").setParameter("n", "Fabio").executeUpdate();
         Assert.assertEquals(1, updated);
 
