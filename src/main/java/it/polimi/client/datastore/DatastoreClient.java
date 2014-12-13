@@ -76,7 +76,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     }
 
     /*---------------------------------------------------------------------------------*/
-    /*----------------------------- PERSIST OPERATIONS -------------------------------*/
+    /*----------------------------- PERSIST OPERATIONS --------------------------------*/
+    /*---------------------------------------------------------------------------------*/
 
     @Override
     public Object generate() {
@@ -222,6 +223,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
     /*---------------------------------------------------------------------------------*/
     /*------------------------------ FIND OPERATIONS ----------------------------------*/
+    /*---------------------------------------------------------------------------------*/
 
     /*
      * it's called to find detached entities
@@ -461,7 +463,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     }
 
     /*---------------------------------------------------------------------------------*/
-    /*----------------------------- DELETE OPERATIONS ----------------------------------*/
+    /*----------------------------- DELETE OPERATIONS ---------------------------------*/
+    /*---------------------------------------------------------------------------------*/
 
     @Override
     public void delete(Object entity, Object pKey) {
@@ -494,6 +497,10 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
             }
         }
     }
+
+    /*---------------------------------------------------------------------------------*/
+    /*-------------------------------- QUERY UTILS ------------------------------------*/
+    /*---------------------------------------------------------------------------------*/
 
     private Query generateRelationQuery(String tableName, String columnName, Object columnValue) {
         Query query = new Query(tableName)
