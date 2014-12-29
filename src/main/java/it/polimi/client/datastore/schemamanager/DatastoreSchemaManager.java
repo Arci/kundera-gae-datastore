@@ -46,16 +46,12 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
         this.puMetadata = kunderaMetadata.getApplicationMetadata().getPersistenceUnitMetadata(persistenceUnit);
         String hostName = null;
         if (externalProperties != null) {
-            // this.databaseName = (String) externalProperties.get(PersistenceProperties.KUNDERA_KEYSPACE);
             hostName = (String) externalProperties.get(PersistenceProperties.KUNDERA_NODES);
             this.port = (String) externalProperties.get(PersistenceProperties.KUNDERA_PORT);
             this.userName = (String) externalProperties.get(PersistenceProperties.KUNDERA_USERNAME);
             this.password = (String) externalProperties.get(PersistenceProperties.KUNDERA_PASSWORD);
             this.operation = (String) externalProperties.get(PersistenceProperties.KUNDERA_DDL_AUTO_PREPARE);
         }
-        // if (this.databaseName == null) {
-        //     this.databaseName = (String) props.get(PersistenceProperties.KUNDERA_KEYSPACE);
-        // }
         if (hostName == null) {
             hostName = this.puMetadata.getProperty(PersistenceProperties.KUNDERA_NODES);
         }

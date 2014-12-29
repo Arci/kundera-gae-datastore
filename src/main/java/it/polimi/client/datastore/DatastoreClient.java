@@ -45,8 +45,11 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
     private EntityReader reader;
     private DatastoreService datastore;
-    public static final String TYPE_SUFFIX = "_type";
-    private static final Logger logger = LoggerFactory.getLogger(DatastoreClient.class);
+    private static final Logger logger;
+
+    static {
+        logger = LoggerFactory.getLogger(DatastoreClient.class);
+    }
 
     protected DatastoreClient(final KunderaMetadata kunderaMetadata, Map<String, Object> properties,
                               String persistenceUnit, final ClientMetadata clientMetadata, IndexManager indexManager,
@@ -62,6 +65,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     public void close() {
         this.indexManager.flush();
         this.reader = null;
+        this.datastore = null;
         externalProperties = null;
     }
 
@@ -132,8 +136,6 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         if (valueObj instanceof Collection<?> || valueObj instanceof Map<?, ?>) {
             try {
                 logger.debug("field = [" + field.getName() + "], typeColumn = [" + jpaColumnName + "_type], objectType = [" + valueObj.getClass().getName() + "]");
-                // TODO remove type column since deserialize reconstruct the object including its class
-                gaeEntity.setProperty(jpaColumnName + TYPE_SUFFIX, valueObj.getClass().getName());
                 valueObj = DatastoreUtils.serialize(valueObj);
             } catch (IOException ioex) {
                 throw new KunderaException("Some errors occurred while serializing the object: ", ioex);
