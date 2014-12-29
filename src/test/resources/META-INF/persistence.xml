@@ -65,7 +65,7 @@
             <!-- optional, credentials (of and Admin on the remote server), mandatory if using remote API -->
             <property name="kundera.username" value="username"/>
             <property name="kundera.password" value="password does not matter"/>
-            <!-- 'create' or 'create-drop' drops (if exists) schema, creation is automatic when first entity is persisted -->
+            <!-- 'create' or 'create-drop' -->
             <property name="kundera.ddl.auto.prepare" value="create"/>
             <!-- datastore specific properties -->
             <property name="kundera.client.property" value="datastore-properties.xml"/>
