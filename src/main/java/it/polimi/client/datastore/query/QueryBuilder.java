@@ -42,7 +42,7 @@ public class QueryBuilder {
         this.kind = getEntityClass().getSimpleName();
         this.holdRelationships = holdRelationships;
         this.isProjectionQuery = false;
-        this.projections = new HashMap<String, Class>();
+        this.projections = new HashMap<>();
         this.limit = maxResults;
     }
 
@@ -184,12 +184,10 @@ public class QueryBuilder {
                     Attribute attribute = entityType.getAttribute(attributeName);
                     String jpaColumnName = ((AbstractAttribute) attribute).getJPAColumnName();
                     addOrdering(direction, jpaColumnName);
-                } catch (IndexOutOfBoundsException iobex) {
-                    /* case fail in split() */
-                    throw new KunderaException("Attribute " + order.getColumnName() + " not found in entity class " + getEntityClass() + ": ", iobex);
-                } catch (NullPointerException npe) {
-                    /* case attribute not found */
-                    throw new KunderaException("Attribute " + order.getColumnName() + " not found in entity class " + getEntityClass() + ": ", npe);
+                } catch (IndexOutOfBoundsException | NullPointerException e) {
+                    /* case fail in split() -> IndexOutOfBoundsException */
+                    /* case attribute not found -> NullPointerException  */
+                    throw new KunderaException("Attribute " + order.getColumnName() + " not found in entity class " + getEntityClass() + ": ", e);
                 }
             }
         }
@@ -261,7 +259,7 @@ public class QueryBuilder {
         filterValue = filterValue.substring(1, filterValue.length() - 1); //remove parenthesis ()
         filterValue = filterValue.replace("'", "").trim();
         String[] elements = filterValue.split(",");
-        List<Object> trimmed = new ArrayList<Object>();
+        List<Object> trimmed = new ArrayList<>();
         for (String el : elements) {
             trimmed.add(el.trim());
         }

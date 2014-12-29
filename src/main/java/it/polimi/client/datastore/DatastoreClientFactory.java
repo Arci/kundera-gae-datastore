@@ -18,6 +18,7 @@ import it.polimi.client.datastore.schemamanager.DatastoreSchemaManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 
@@ -147,7 +148,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
             this.installer = new RemoteApiInstaller();
             this.installer.install(options);
             logger.info("Connected to Datastore at " + nodes + ":" + connection_port);
-        } catch (Exception e) {
+        } catch (IOException e) {
             throw new ClientLoaderException("Unable to connect to Datastore at " + nodes + ":" + connection_port + ": ", e);
         }
     }
@@ -183,7 +184,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
                     config = DatastoreServiceConfig.Builder.withImplicitTransactionManagementPolicy(transactionPolicy);
                     logger.info("\ttransaction policy [" + transactionPolicy.name() + "]");
                 }
-            } catch (Exception e) {
+            } catch (IllegalArgumentException | NullPointerException e) {
                 throw new ClientLoaderException("Some error occurred creating Datastore configuration: ", e);
             }
         }
@@ -208,7 +209,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
             try {
                 ReadPolicy.Consistency consistencyType = ReadPolicy.Consistency.valueOf(readPolicy.toUpperCase());
                 return new ReadPolicy(consistencyType);
-            } catch (Exception e) {
+            } catch (IllegalArgumentException | NullPointerException e) {
                 throw new ClientLoaderException("Invalid read policy " + readPolicy + ": ", e);
             }
         }
@@ -220,7 +221,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
         if (transactionPolicy != null && !transactionPolicy.isEmpty()) {
             try {
                 return ImplicitTransactionManagementPolicy.valueOf(transactionPolicy.toUpperCase());
-            } catch (Exception e) {
+            } catch (IllegalArgumentException | NullPointerException e) {
                 throw new ClientLoaderException("Invalid transaction policy " + transactionPolicy + ": ", e);
             }
         }

@@ -19,7 +19,7 @@ import javax.persistence.Persistence;
 public abstract class TestBase {
 
     /** GAE testing tools */
-    private LocalDatastoreServiceTestConfig datastoreConfig = new LocalDatastoreServiceTestConfig();
+    private final LocalDatastoreServiceTestConfig datastoreConfig = new LocalDatastoreServiceTestConfig();
     private final LocalServiceTestHelper helper = new LocalServiceTestHelper(datastoreConfig);
 
     /** JPA stuff */

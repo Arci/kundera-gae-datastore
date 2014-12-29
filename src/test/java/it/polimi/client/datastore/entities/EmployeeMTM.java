@@ -37,7 +37,7 @@ public class EmployeeMTM {
 
     public void addProjects(ProjectMTM... projects) {
         if (this.projects == null) {
-            this.projects = new ArrayList<ProjectMTM>();
+            this.projects = new ArrayList<>();
         }
         Collections.addAll(this.projects, projects);
     }

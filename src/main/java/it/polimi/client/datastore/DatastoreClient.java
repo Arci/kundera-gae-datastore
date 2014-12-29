@@ -137,8 +137,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
             try {
                 logger.debug("field = [" + field.getName() + "], typeColumn = [" + jpaColumnName + "_type], objectType = [" + valueObj.getClass().getName() + "]");
                 valueObj = DatastoreUtils.serialize(valueObj);
-            } catch (IOException ioex) {
-                throw new KunderaException("Some errors occurred while serializing the object: ", ioex);
+            } catch (IOException e) {
+                throw new KunderaException("Some errors occurred while serializing the object: ", e);
             }
         } else if (((Field) attribute.getJavaMember()).getType().isEnum()) {
             valueObj = valueObj.toString();
@@ -243,10 +243,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
             }
             logger.info(gaeEntity.toString());
             return initializeEntity(gaeEntity, entityClass);
-        } catch (InstantiationException iex) {
-            throw new KunderaException(iex);
-        } catch (IllegalAccessException iaex) {
-            throw new KunderaException(iaex);
+        } catch (InstantiationException | IllegalAccessException e) {
+            throw new KunderaException(e);
         }
     }
 
@@ -272,7 +270,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 entityMetadata.getPersistenceUnit());
         EntityType entityType = metamodel.entity(entityMetadata.getEntityClazz());
 
-        Map<String, Object> relationMap = new HashMap<String, Object>();
+        Map<String, Object> relationMap = new HashMap<>();
         Object entity = entityMetadata.getEntityClazz().newInstance();
 
         initializeID(entityMetadata, gaeEntity, entity);
@@ -312,7 +310,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
             try {
                 /* deserialize reconstruct also the original object class */
                 fieldValue = DatastoreUtils.deserialize((Blob) fieldValue);
-            } catch (Exception e) {
+            } catch (ClassNotFoundException | IOException e) {
                 throw new KunderaException("Some errors occurred while deserializing the object: ", e);
             }
         } else if (((Field) attribute.getJavaMember()).getType().isEnum()) {
@@ -360,7 +358,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
      */
     @Override
     public <E> List<E> findAll(Class<E> entityClass, String[] columnsToSelect, Object... keys) {
-        logger.debug("entityClass = [" + entityClass + "], columnsToSelect = [" + columnsToSelect + "], keys = [" + keys + "]");
+        logger.debug("entityClass = [" + entityClass + "], columnsToSelect = [" + Arrays.toString(columnsToSelect) + "], keys = [" + Arrays.toString(keys) + "]");
 
         List results = new ArrayList();
         for (Object key : keys) {
@@ -400,7 +398,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         Query query = generateRelationQuery(entityClass.getSimpleName(), colName, targetKey);
         query.setKeysOnly();
 
-        List<Object> results = new ArrayList<Object>();
+        List<Object> results = new ArrayList<>();
         List<Entity> entities = getQueryResults(query);
         if (!entities.isEmpty()) {
             for (Entity entity : entities) {
@@ -425,7 +423,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
         Query query = generateRelationQuery(tableName, pKeyColumnName, pKeyColumnValue);
 
-        List<E> results = new ArrayList<E>();
+        List<E> results = new ArrayList<>();
         List<Entity> entities = getQueryResults(query);
         logger.debug(columnName + " for " + pKeyColumnName + "[" + pKeyColumnValue + "]:");
         if (!entities.isEmpty()) {
@@ -452,7 +450,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
         Query query = generateRelationQuery(tableName, columnName, columnValue);
 
-        List<Object> results = new ArrayList<Object>();
+        List<Object> results = new ArrayList<>();
         List<Entity> entities = getQueryResults(query);
         logger.debug(pKeyName + " for " + columnName + "[" + columnValue + "]:");
         if (!entities.isEmpty()) {
@@ -516,7 +514,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     public List<Object> executeQuery(QueryBuilder builder) {
         logger.info(builder.getQuery().toString());
 
-        List<Object> results = new ArrayList<Object>();
+        List<Object> results = new ArrayList<>();
         List<Entity> entities = getQueryResults(builder.getQuery(), builder.getLimit());
         for (Entity entity : entities) {
             logger.debug(entity.toString());
@@ -539,10 +537,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                         }
                     }
                 }
-            } catch (InstantiationException iex) {
-                throw new KunderaException(iex);
-            } catch (IllegalAccessException iaex) {
-                throw new KunderaException(iaex);
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new KunderaException(e);
             }
         }
         return results;

@@ -23,7 +23,7 @@ public class AddressCollection {
     private List<String> streets;
 
     public void setStreets(String... streets) {
-        this.streets = new ArrayList<String>();
+        this.streets = new ArrayList<>();
         Collections.addAll(this.streets, streets);
     }
 }

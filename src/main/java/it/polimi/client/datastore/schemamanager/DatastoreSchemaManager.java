@@ -12,6 +12,7 @@ import com.impetus.kundera.persistence.EntityManagerFactoryImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -108,7 +109,7 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
                 this.installer = new RemoteApiInstaller();
                 this.installer.install(options);
                 logger.info("Connected to Datastore at " + hosts[0] + ":" + port);
-            } catch (Exception e) {
+            } catch (IOException e) {
                 throw new ClientLoaderException("Unable to connect to Datastore at " + hosts[0] + ":" + port + ": ", e);
             }
         } else {
