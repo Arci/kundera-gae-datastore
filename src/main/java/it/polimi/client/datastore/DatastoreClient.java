@@ -133,7 +133,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
         if (valueObj instanceof Collection<?> || valueObj instanceof Map<?, ?>) {
             try {
-                logger.debug("field = [" + field.getName() + "], typeColumn = [" + jpaColumnName + "_type], objectType = [" + valueObj.getClass().getName() + "]");
+                logger.debug("field = [" + field.getName() + "], objectType = [" + valueObj.getClass().getName() + "]");
                 valueObj = DatastoreUtils.serialize(valueObj);
             } catch (IOException e) {
                 throw new KunderaException("Some errors occurred while serializing the object: ", e);
