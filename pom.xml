@@ -17,6 +17,7 @@
 
     <!-- Dependencies -->
     <dependencies>
+        <!-- Kundera -->
         <dependency>
             <groupId>com.impetus.kundera.core</groupId>
             <artifactId>kundera-core</artifactId>
@@ -36,6 +37,7 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+        <!-- GAE -->
         <dependency>
             <groupId>com.google.appengine</groupId>
             <artifactId>appengine-api-1.0-sdk</artifactId>

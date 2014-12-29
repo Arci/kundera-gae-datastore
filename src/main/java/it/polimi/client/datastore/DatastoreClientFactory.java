@@ -53,21 +53,16 @@ public class DatastoreClientFactory extends GenericClientFactory {
         String pu = getPersistenceUnit();
         PersistenceUnitMetadata puMetadata = kunderaMetadata.getApplicationMetadata().getPersistenceUnitMetadata(pu);
         Properties properties = puMetadata.getProperties();
-        // String keyspace = null;
         String nodes = null;
         String port = null;
         String username = null;
         String password = null;
         if (externalProperties != null) {
-            // keyspace = (String) externalProperties.get(PersistenceProperties.KUNDERA_KEYSPACE);
             nodes = (String) externalProperties.get(PersistenceProperties.KUNDERA_NODES);
             port = (String) externalProperties.get(PersistenceProperties.KUNDERA_PORT);
             username = (String) externalProperties.get(PersistenceProperties.KUNDERA_USERNAME);
             password = (String) externalProperties.get(PersistenceProperties.KUNDERA_PASSWORD);
         }
-        // if (keyspace == null) {
-        //     keyspace = (String) props.get(PersistenceProperties.KUNDERA_KEYSPACE);
-        // }
         if (nodes == null) {
             nodes = (String) properties.get(PersistenceProperties.KUNDERA_NODES);
         }
@@ -84,7 +79,6 @@ public class DatastoreClientFactory extends GenericClientFactory {
         if (nodes != null && username != null && password != null) {
             initializeConnection(nodes, port, username, password);
         }
-
         DatastoreServiceConfig config = buildConfiguration();
         datastore = DatastoreServiceFactory.getDatastoreService(config);
 
@@ -93,8 +87,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
 
     @Override
     protected Client instantiateClient(String persistenceUnit) {
-        return new DatastoreClient(kunderaMetadata, externalProperties, persistenceUnit, clientMetadata,
-                indexManager, reader, datastore);
+        return new DatastoreClient(kunderaMetadata, externalProperties, persistenceUnit, clientMetadata, indexManager, reader, datastore);
     }
 
     @Override
@@ -128,8 +121,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
 
     @Override
     protected void initializeLoadBalancer(String loadBalancingPolicyName) {
-        throw new UnsupportedOperationException("Load balancing feature is not supported in "
-                + this.getClass().getSimpleName());
+        throw new UnsupportedOperationException("Load balancing feature is not supported in " + this.getClass().getSimpleName());
     }
 
     private void initializePropertyReader() {
