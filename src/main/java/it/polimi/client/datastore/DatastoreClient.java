@@ -79,10 +79,6 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         return DatastoreQuery.class;
     }
 
-    /*---------------------------------------------------------------------------------*/
-    /*----------------------------- PERSIST OPERATIONS --------------------------------*/
-    /*---------------------------------------------------------------------------------*/
-
     @Override
     public Object generate() {
         /*
@@ -91,6 +87,10 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
          */
         return UUID.randomUUID().toString();
     }
+
+    /*---------------------------------------------------------------------------------*/
+    /*----------------------------- PERSIST OPERATIONS --------------------------------*/
+    /*---------------------------------------------------------------------------------*/
 
     @Override
     protected void onPersist(EntityMetadata entityMetadata, Object entity, Object id, List<RelationHolder> rlHolders) {
@@ -114,10 +114,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     private void handleAttributes(Entity gaeEntity, Object entity, MetamodelImpl metamodel, EntityMetadata entityMetadata, Set<Attribute> attributes) {
         String idAttribute = ((AbstractAttribute) entityMetadata.getIdAttribute()).getJPAColumnName();
         for (Attribute attribute : attributes) {
-            /*
-             * By pass ID attribute, is redundant since is also stored within the Key.
-             * By pass associations (i.e. relations) that are handled in handleRelations()
-             */
+            // By pass ID attribute, is redundant since is also stored within the Key.
+            // By pass associations (i.e. relations) that are handled in handleRelations()
             if (!attribute.isAssociation() && !((AbstractAttribute) attribute).getJPAColumnName().equals(idAttribute)) {
                 if (metamodel.isEmbeddable(((AbstractAttribute) attribute).getBindableJavaType())) {
                     processEmbeddableAttribute(gaeEntity, entity, attribute, metamodel);
