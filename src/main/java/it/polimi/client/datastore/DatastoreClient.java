@@ -271,7 +271,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         Map<String, Object> relationMap = new HashMap<>();
         Object entity = entityMetadata.getEntityClazz().newInstance();
 
-        initializeID(entityMetadata, gaeEntity, entity);
+        initializeID(gaeEntity, entityMetadata, entity);
         Set<Attribute> attributes = entityType.getAttributes();
         for (Attribute attribute : attributes) {
             if (!attribute.isAssociation()) {
@@ -289,7 +289,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         return new EnhanceEntity(entity, gaeEntity.getKey().getName(), relationMap.isEmpty() ? null : relationMap);
     }
 
-    private void initializeID(EntityMetadata entityMetadata, Entity gaeEntity, Object entity) {
+    private void initializeID(Entity gaeEntity, EntityMetadata entityMetadata, Object entity) {
         String jpaColumnName = ((AbstractAttribute) entityMetadata.getIdAttribute()).getJPAColumnName();
         Object id = gaeEntity.getKey().getName();
         if (id == null) {
@@ -300,6 +300,14 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         PropertyAccessorHelper.setId(entity, entityMetadata, id);
     }
 
+    /* (non-Javadoc)
+     *
+     * PropertyContainer is used to handle both EmbeddedEntity and Entity.
+     *
+     * @see com.google.appengine.api.datastore.PropertyContainer
+     * @see com.google.appengine.api.datastore.EmbeddedEntity
+     * @see com.google.appengine.api.datastore.Entity
+     */
     private void initializeAttribute(PropertyContainer gaeEntity, Object entity, Attribute attribute) {
         String jpaColumnName = ((AbstractAttribute) attribute).getJPAColumnName();
         Object fieldValue = gaeEntity.getProperties().get(jpaColumnName);
