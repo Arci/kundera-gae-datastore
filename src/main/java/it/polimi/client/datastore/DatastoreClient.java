@@ -200,6 +200,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
      *  -----------------------------------------------------------------------
      *  |          id (owner)           |             id (child)               |
      *  -----------------------------------------------------------------------
+     *
+     *  note: owner and child are datastore ids
      */
     @Override
     public void persistJoinTable(JoinTableData joinTableData) {
@@ -225,7 +227,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     /*------------------------------ FIND OPERATIONS ----------------------------------*/
     /*---------------------------------------------------------------------------------*/
 
-    /*
+    /* (non-Javadoc)
+     *
      * it's called to find detached entities
      */
     @Override
@@ -329,20 +332,24 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         }
     }
 
-    private void initializeEmbeddedAttribute(Entity gaeEntity, Object entity, Attribute attribute, MetamodelImpl metamodel) throws IllegalAccessException, InstantiationException {
+    private void initializeEmbeddedAttribute(Entity gaeEntity, Object entity, Attribute attribute, MetamodelImpl metamodel) {
         String jpaColumnName = ((AbstractAttribute) attribute).getJPAColumnName();
         EmbeddedEntity embeddedEntity = (EmbeddedEntity) gaeEntity.getProperties().get(jpaColumnName);
 
         if (jpaColumnName != null && embeddedEntity != null) {
             logger.debug("jpaColumnName = [" + jpaColumnName + "], embeddedEntity = [" + embeddedEntity + "]");
 
-            EmbeddableType embeddable = metamodel.embeddable(((AbstractAttribute) attribute).getBindableJavaType());
-            Object embeddedObj = embeddable.getJavaType().newInstance();
-            Set<Attribute> embeddedAttributes = embeddable.getAttributes();
-            for (Attribute embeddedAttribute : embeddedAttributes) {
-                initializeAttribute(embeddedEntity, embeddedObj, embeddedAttribute);
+            try {
+                EmbeddableType embeddable = metamodel.embeddable(((AbstractAttribute) attribute).getBindableJavaType());
+                Object embeddedObj = embeddable.getJavaType().newInstance();
+                Set<Attribute> embeddedAttributes = embeddable.getAttributes();
+                for (Attribute embeddedAttribute : embeddedAttributes) {
+                    initializeAttribute(embeddedEntity, embeddedObj, embeddedAttribute);
+                }
+                PropertyAccessorHelper.set(entity, (Field) attribute.getJavaMember(), embeddedObj);
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new KunderaException("Some errors occurred while reconstructing embedded attribute " + jpaColumnName + ": ", e);
             }
-            PropertyAccessorHelper.set(entity, (Field) attribute.getJavaMember(), embeddedObj);
         }
     }
 
@@ -356,7 +363,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         }
     }
 
-    /*
+    /* (non-Javadoc)
+     *
      * Implicitly it gets invoked, when kundera.indexer.class or lucene.home.dir is configured.
      * Means to use custom indexer for secondary indexes.
      * This method can also be very helpful to find rows for all primary keys! as with
@@ -376,7 +384,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         return results;
     }
 
-    /*
+    /* (non-Javadoc)
+     *
      * It can be ignored, It was in place to purely support Cassandra's super columns.
      */
     @Override
@@ -384,7 +393,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         throw new UnsupportedOperationException("Not supported in " + this.getClass().getSimpleName());
     }
 
-    /*
+    /* (non-Javadoc)
+     *
      * used to retrieve relation for OneToMany (ManyToOne inverse relation),
      * is supposed to retrieve the initialized objects.
      *
@@ -414,7 +424,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         return results;
     }
 
-    /*
+    /* (non-Javadoc)
+     *
      * used to retrieve owner-side relation for ManyToMany,
      * is supposed to retrieve the objects id.
      *
@@ -441,7 +452,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         return results;
     }
 
-    /*
+    /* (non-Javadoc)
+     *
      * used to retrieve target-side relation for ManyToMany,
      * is supposed to retrieve the objects id.
      *
@@ -481,7 +493,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         datastore.delete(key);
     }
 
-    /*
+    /* (non-Javadoc)
+     *
      * used to delete relation for ManyToMany
      *
      * for example:
