@@ -171,7 +171,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                 Object targetId = rh.getRelationValue();
 
                 if (relation != null && jpaColumnName != null && targetId != null) {
-                    Key targetKey = DatastoreUtils.createKey(relation.getTargetEntity().getSimpleName(), targetId);
+                    EntityMetadata targetMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, relation.getTargetEntity());
+                    Key targetKey = DatastoreUtils.createKey(targetMetadata.getTableName(), targetId);
                     logger.debug("field = [" + fieldName + "], jpaColumnName = [" + jpaColumnName + "], targetKey = [" + targetKey + "]");
                     gaeEntity.setProperty(jpaColumnName, targetKey);
                 }
@@ -399,7 +400,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
      * is supposed to retrieve the initialized objects.
      *
      * for example:
-     *      select * from EmployeeMTObis (entityClass)
+     *      select * from EmployeeMTObis (table name of entityClass)
      *      where DEPARTMENT_ID (colName) equals (colValue)
      */
     @Override
@@ -407,11 +408,15 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         logger.debug("colName = [" + colName + "], colValue = [" + colValue + "], entityClazz = [" + entityClass + "]");
 
         EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entityClass);
+        String tableName = entityMetadata.getTableName();
+
         String fieldName = entityMetadata.getFieldName(colName);
         Relation relation = entityMetadata.getRelation(fieldName);
-        Key targetKey = DatastoreUtils.createKey(relation.getTargetEntity().getSimpleName(), colValue);
+        EntityMetadata targetMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, relation.getTargetEntity());
+        String targetTableName = targetMetadata.getTableName();
+        Key targetKey = DatastoreUtils.createKey(targetTableName, colValue);
 
-        Query query = generateRelationQuery(entityClass.getSimpleName(), colName, targetKey);
+        Query query = generateRelationQuery(tableName, colName, targetKey);
         query.setKeysOnly();
 
         List<Object> results = new ArrayList<>();

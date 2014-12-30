@@ -70,8 +70,15 @@ public class QueryBuilder {
         return this.limit;
     }
 
-    public QueryBuilder setFrom(Class entityClass) {
-        this.query = new Query(entityClass.getSimpleName());
+    /**
+     * Initialize a new {@link com.google.appengine.api.datastore.Query} on the given kind.
+     *
+     * @param kind kind subject of the query
+     *
+     * @return this, for chaining.
+     */
+    public QueryBuilder setFrom(String kind) {
+        this.query = new Query(kind);
         return this;
     }
 

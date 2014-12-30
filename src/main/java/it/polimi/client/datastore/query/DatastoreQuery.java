@@ -81,13 +81,11 @@ public class DatastoreQuery extends QueryImpl {
 
     private QueryBuilder translateQuery(KunderaQuery kunderaQuery, boolean holdRelationships) {
         EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, kunderaQuery.getEntityClass());
-        MetamodelImpl metaModel = (MetamodelImpl) kunderaMetadata.getApplicationMetadata().getMetamodel(
-                entityMetadata.getPersistenceUnit());
+        MetamodelImpl metaModel = (MetamodelImpl) kunderaMetadata.getApplicationMetadata().getMetamodel(entityMetadata.getPersistenceUnit());
         EntityType entityType = metaModel.entity(entityMetadata.getEntityClazz());
 
         QueryBuilder builder = new QueryBuilder(entityMetadata, entityType, holdRelationships, super.getMaxResults());
-
-        builder.setFrom(kunderaQuery.getEntityClass())
+        builder.setFrom(entityMetadata.getTableName())
                 .addProjections(super.getColumns(kunderaQuery.getResult(), entityMetadata))
                 .addFilters(kunderaQuery.getFilterClauseQueue())
                 .addOrderings(kunderaQuery.getOrdering());
