@@ -96,8 +96,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     protected void onPersist(EntityMetadata entityMetadata, Object entity, Object id, List<RelationHolder> rlHolders) {
         logger.debug("entityMetadata = [" + entityMetadata + "], entity = [" + entity + "], id = [" + id + "], rlHolders = [" + rlHolders + "]");
 
-        MetamodelImpl metamodel = KunderaMetadataManager.getMetamodel(kunderaMetadata,
-                entityMetadata.getPersistenceUnit());
+        MetamodelImpl metamodel = KunderaMetadataManager.getMetamodel(kunderaMetadata, entityMetadata.getPersistenceUnit());
         EntityType entityType = metamodel.entity(entityMetadata.getEntityClazz());
 
         Entity gaeEntity = DatastoreUtils.createDatastoreEntity(entityMetadata, id);
@@ -141,6 +140,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         } else if (((Field) attribute.getJavaMember()).getType().isEnum()) {
             valueObj = valueObj.toString();
         }
+
         if (valueObj != null) {
             logger.debug("field = [" + field.getName() + "], jpaColumnName = [" + jpaColumnName + "], valueObj = [" + valueObj + "]");
             gaeEntity.setProperty(jpaColumnName, valueObj);
@@ -268,8 +268,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
     private EnhanceEntity initializeEntity(Entity gaeEntity, Class entityClass) throws IllegalAccessException, InstantiationException {
         EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entityClass);
-        MetamodelImpl metamodel = KunderaMetadataManager.getMetamodel(kunderaMetadata,
-                entityMetadata.getPersistenceUnit());
+        MetamodelImpl metamodel = KunderaMetadataManager.getMetamodel(kunderaMetadata, entityMetadata.getPersistenceUnit());
         EntityType entityType = metamodel.entity(entityMetadata.getEntityClazz());
 
         Map<String, Object> relationMap = new HashMap<>();
@@ -327,6 +326,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
             EnumAccessor accessor = new EnumAccessor();
             fieldValue = accessor.fromString(((AbstractAttribute) attribute).getBindableJavaType(), fieldValue.toString());
         }
+
         if (jpaColumnName != null && fieldValue != null) {
             logger.debug("jpaColumnName = [" + jpaColumnName + "], fieldValue = [" + fieldValue + "]");
             PropertyAccessorHelper.set(entity, (Field) attribute.getJavaMember(), fieldValue);
@@ -421,10 +421,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
         List<Object> results = new ArrayList<>();
         List<Entity> entities = getQueryResults(query);
-        if (!entities.isEmpty()) {
-            for (Entity entity : entities) {
-                results.add(find(entityClass, entity.getKey()));
-            }
+        for (Entity entity : entities) {
+            results.add(find(entityClass, entity.getKey()));
         }
         return results;
     }
@@ -448,11 +446,9 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         List<E> results = new ArrayList<>();
         List<Entity> entities = getQueryResults(query);
         logger.debug(columnName + " for " + pKeyColumnName + "[" + pKeyColumnValue + "]:");
-        if (!entities.isEmpty()) {
-            for (Entity entity : entities) {
-                logger.debug("\t" + entity.getProperty(columnName));
-                results.add((E) entity.getProperty(columnName));
-            }
+        for (Entity entity : entities) {
+            logger.debug("\t" + entity.getProperty(columnName));
+            results.add((E) entity.getProperty(columnName));
         }
         return results;
     }
@@ -476,11 +472,9 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         List<Object> results = new ArrayList<>();
         List<Entity> entities = getQueryResults(query);
         logger.debug(pKeyName + " for " + columnName + "[" + columnValue + "]:");
-        if (!entities.isEmpty()) {
-            for (Entity entity : entities) {
-                logger.debug("\t" + entity.getProperty(pKeyName));
-                results.add(entity.getProperty(pKeyName));
-            }
+        for (Entity entity : entities) {
+            logger.debug("\t" + entity.getProperty(pKeyName));
+            results.add(entity.getProperty(pKeyName));
         }
         return results.toArray();
     }
@@ -515,10 +509,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         query.setKeysOnly();
 
         List<Entity> entities = getQueryResults(query);
-        if (!entities.isEmpty()) {
-            for (Entity entity : entities) {
-                datastore.delete(entity.getKey());
-            }
+        for (Entity entity : entities) {
+            datastore.delete(entity.getKey());
         }
     }
 
