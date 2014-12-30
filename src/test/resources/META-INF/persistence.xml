@@ -65,9 +65,9 @@
             <!-- optional, credentials (of and Admin on the remote server), mandatory if using remote API -->
             <property name="kundera.username" value="username"/>
             <property name="kundera.password" value="password does not matter"/>
-            <!-- 'create' or 'create-drop' -->
+            <!-- optional, 'create' or 'create-drop' -->
             <property name="kundera.ddl.auto.prepare" value="create"/>
-            <!-- datastore specific properties -->
+            <!-- optional, datastore specific properties -->
             <property name="kundera.client.property" value="datastore-properties.xml"/>
             <property name="kundera.client.lookup.class" value="it.polimi.client.datastore.DatastoreClientFactory"/>
         </properties>

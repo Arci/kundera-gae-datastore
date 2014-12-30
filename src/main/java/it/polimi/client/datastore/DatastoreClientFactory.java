@@ -127,8 +127,8 @@ public class DatastoreClientFactory extends GenericClientFactory {
 
     private void initializePropertyReader() {
         if (propertyReader == null) {
-            propertyReader = new DatastorePropertyReader(externalProperties, kunderaMetadata.getApplicationMetadata()
-                    .getPersistenceUnitMetadata(getPersistenceUnit()));
+            propertyReader = new DatastorePropertyReader(externalProperties,
+                    kunderaMetadata.getApplicationMetadata().getPersistenceUnitMetadata(getPersistenceUnit()));
             propertyReader.read(getPersistenceUnit());
         }
     }
@@ -159,7 +159,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
         if (properties != null) {
             logger.info("Initialize datastore with:");
             ReadPolicy readPolicy = parseReadPolicy(properties);
-            Double deadline = ReadDeadline(properties);
+            Double deadline = parseDeadline(properties);
             ImplicitTransactionManagementPolicy transactionPolicy = parseTransactionPolicy(properties);
             try {
                 if (readPolicy != null) {
@@ -191,7 +191,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
         return config;
     }
 
-    private Double ReadDeadline(Properties properties) {
+    private Double parseDeadline(Properties properties) {
         String deadline = (String) properties.get(DatastoreConstants.DEADLINE);
         if (deadline != null && !deadline.isEmpty()) {
             try {
