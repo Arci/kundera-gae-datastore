@@ -13,7 +13,10 @@ import it.polimi.client.datastore.DatastoreUtils;
 
 import javax.persistence.metamodel.Attribute;
 import javax.persistence.metamodel.EntityType;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Queue;
 
 /**
  * Helpful methods to translate from {@link com.impetus.kundera.query.KunderaQuery}
@@ -26,19 +29,15 @@ import java.util.*;
 public class QueryBuilder {
 
     private Query query;
-
     private final EntityType entityType;
     private final EntityMetadata entityMetadata;
-
     private int limit;
     private boolean holdRelationships;
-    private Map<String, Class> projections;
 
     public QueryBuilder(EntityMetadata entityMetadata, EntityType entityType, boolean holdRelationships) {
         this.entityMetadata = entityMetadata;
         this.entityType = entityType;
         this.holdRelationships = holdRelationships;
-        this.projections = new HashMap<>();
     }
 
     public Query getQuery() {
@@ -55,14 +54,6 @@ public class QueryBuilder {
 
     public int getLimit() {
         return this.limit;
-    }
-
-    public Set<String> getProjections() {
-        return this.projections.keySet();
-    }
-
-    public boolean isProjectionQuery() {
-        return !this.projections.isEmpty();
     }
 
     /**
@@ -126,7 +117,6 @@ public class QueryBuilder {
      * @see com.google.appengine.api.datastore.PropertyProjection
      */
     public QueryBuilder addProjection(String column, Class columnType) {
-        this.projections.put(column, columnType);
         this.query.addProjection(new PropertyProjection(column, columnType));
         return this;
     }

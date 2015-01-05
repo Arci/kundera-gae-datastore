@@ -7,7 +7,6 @@ import it.polimi.client.datastore.entities.PhoneType;
 import org.junit.Assert;
 import org.junit.Test;
 
-import javax.persistence.Query;
 import javax.persistence.TypedQuery;
 import java.util.List;
 
@@ -62,18 +61,17 @@ public class DatastoreQueryTest extends TestBase {
         clear();
 
         print("select property");
-        Query projection = em.createQuery("SELECT e.name, e.salary FROM Employee e WHERE e.id = :id");
-        List results = projection.setParameter("id", emp1Id).getResultList();
-        Assert.assertTrue(results.size() == 2);
-        for (Object property : results) {
-            Assert.assertTrue(property.equals("Fabio") || property.equals(123L));
-        }
+        query = em.createQuery("SELECT e.name FROM Employee e WHERE e.id = :id", Employee.class);
+        Employee foundEmployee = query.setParameter("id", emp1Id).getSingleResult();
+        Assert.assertNotNull(foundEmployee);
+        Assert.assertEquals("Fabio", foundEmployee.getName());
+        Assert.assertNull(foundEmployee.getSalary());
 
         clear();
 
         print("where clause");
         query = em.createQuery("SELECT e FROM Employee e WHERE e.id = :id", Employee.class);
-        Employee foundEmployee = query.setParameter("id", emp1Id).getSingleResult();
+        foundEmployee = query.setParameter("id", emp1Id).getSingleResult();
         Assert.assertNotNull(foundEmployee);
         Assert.assertEquals(emp1Id, foundEmployee.getId());
         Assert.assertEquals("Fabio", foundEmployee.getName());
