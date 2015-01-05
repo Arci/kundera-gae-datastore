@@ -274,20 +274,21 @@ public class QueryBuilder {
     }
 
     private Query.FilterOperator parseCondition(String condition) {
-        if (condition.equals("=")) {
-            return Query.FilterOperator.EQUAL;
-        } else if (condition.equals("!=")) {
-            return Query.FilterOperator.NOT_EQUAL;
-        } else if (condition.equals(">")) {
-            return Query.FilterOperator.GREATER_THAN;
-        } else if (condition.equals(">=")) {
-            return Query.FilterOperator.GREATER_THAN_OR_EQUAL;
-        } else if (condition.equalsIgnoreCase("IN")) {
-            return Query.FilterOperator.IN;
-        } else if (condition.equals("<")) {
-            return Query.FilterOperator.LESS_THAN;
-        } else if (condition.equals("<=")) {
-            return Query.FilterOperator.LESS_THAN_OR_EQUAL;
+        switch (condition) {
+            case "=":
+                return Query.FilterOperator.EQUAL;
+            case "!=":
+                return Query.FilterOperator.NOT_EQUAL;
+            case ">":
+                return Query.FilterOperator.GREATER_THAN;
+            case ">=":
+                return Query.FilterOperator.GREATER_THAN_OR_EQUAL;
+            case "<":
+                return Query.FilterOperator.LESS_THAN;
+            case "<=":
+                return Query.FilterOperator.LESS_THAN_OR_EQUAL;
+            case "IN":
+                return Query.FilterOperator.IN;
         }
         /* BETWEEN is automatically converted in (X >= K1 AND X <= K2) by Kundera */
         throw new KunderaException("Condition " + condition + " is not supported by Datastore");

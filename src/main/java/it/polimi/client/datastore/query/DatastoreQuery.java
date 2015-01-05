@@ -51,6 +51,7 @@ public class DatastoreQuery extends QueryImpl {
         if (logger.isDebugEnabled()) {
             printQuery();
         }
+
         QueryBuilder builder = translateQuery(this.kunderaQuery, false);
         return ((DatastoreClient) client).executeQuery(builder);
     }
@@ -63,6 +64,7 @@ public class DatastoreQuery extends QueryImpl {
         if (logger.isDebugEnabled()) {
             printQuery();
         }
+
         QueryBuilder builder = translateQuery(this.kunderaQuery, true);
         List<Object> queryResults = ((DatastoreClient) client).executeQuery(builder);
         return setRelationEntities(queryResults, client, m);
@@ -76,6 +78,7 @@ public class DatastoreQuery extends QueryImpl {
         if (logger.isDebugEnabled()) {
             printQuery();
         }
+
         return onUpdateDeleteEvent();
     }
 
