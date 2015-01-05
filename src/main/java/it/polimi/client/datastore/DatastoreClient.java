@@ -270,6 +270,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         EntityMetadata entityMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, entityClass);
         MetamodelImpl metamodel = KunderaMetadataManager.getMetamodel(kunderaMetadata, entityMetadata.getPersistenceUnit());
         EntityType entityType = metamodel.entity(entityMetadata.getEntityClazz());
+        String idAttribute = ((AbstractAttribute) entityMetadata.getIdAttribute()).getJPAColumnName();
 
         Map<String, Object> relationMap = new HashMap<>();
         Object entity = entityMetadata.getEntityClazz().newInstance();
@@ -277,19 +278,29 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         initializeID(gaeEntity, entityMetadata, entity);
         Set<Attribute> attributes = entityType.getAttributes();
         for (Attribute attribute : attributes) {
-            if (!attribute.isAssociation()) {
-                if (metamodel.isEmbeddable(((AbstractAttribute) attribute).getBindableJavaType())) {
-                    initializeEmbeddedAttribute(gaeEntity, entity, attribute, metamodel);
+            // ignore id attribute, handled in initializeID(...)
+            if (!((AbstractAttribute) attribute).getJPAColumnName().equals(idAttribute)) {
+                if (!attribute.isAssociation()) {
+                    if (metamodel.isEmbeddable(((AbstractAttribute) attribute).getBindableJavaType())) {
+                        initializeEmbeddedAttribute(gaeEntity, entity, attribute, metamodel);
+                    } else {
+                        initializeAttribute(gaeEntity, entity, attribute);
+                    }
                 } else {
-                    initializeAttribute(gaeEntity, entity, attribute);
+                    if (!relationWillBeFilledByQuery(entityMetadata, attribute)) {
+                        initializeRelation(gaeEntity, attribute, relationMap);
+                    }
                 }
-            } else {
-                initializeRelation(gaeEntity, attribute, relationMap);
             }
         }
         logger.info(entity.toString());
 
         return new EnhanceEntity(entity, gaeEntity.getKey().getName(), relationMap.isEmpty() ? null : relationMap);
+    }
+
+    private boolean relationWillBeFilledByQuery(EntityMetadata entityMetadata, Attribute attribute) {
+        Relation.ForeignKey relationType = entityMetadata.getRelation(attribute.getName()).getType();
+        return relationType.equals(Relation.ForeignKey.ONE_TO_MANY) || relationType.equals(Relation.ForeignKey.MANY_TO_MANY);
     }
 
     private void initializeID(Entity gaeEntity, EntityMetadata entityMetadata, Object entity) {
