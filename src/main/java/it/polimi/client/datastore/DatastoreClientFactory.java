@@ -139,8 +139,8 @@ public class DatastoreClientFactory extends GenericClientFactory {
         if (port != null) {
             try {
                 connection_port = Integer.parseInt(port);
-            } catch (NumberFormatException nfe) {
-                throw new ClientLoaderException("Invalid port " + port + ": ", nfe);
+            } catch (NumberFormatException e) {
+                throw new ClientLoaderException("Invalid port " + port + ": ", e);
             }
         }
         try {
@@ -196,8 +196,8 @@ public class DatastoreClientFactory extends GenericClientFactory {
         if (deadline != null && !deadline.isEmpty()) {
             try {
                 return Double.parseDouble(deadline);
-            } catch (NumberFormatException nfe) {
-                throw new ClientLoaderException("Invalid read deadline " + deadline + ": ", nfe);
+            } catch (NumberFormatException e) {
+                throw new ClientLoaderException("Invalid read deadline " + deadline + ": ", e);
             }
         }
         return null;

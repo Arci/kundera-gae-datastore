@@ -100,9 +100,9 @@ public class QueryBuilder {
                     String filedName = entityMetadata.getFieldName(column);
                     Attribute attribute = entityType.getAttribute(filedName);
                     addProjection(column, attribute.getJavaType());
-                } catch (NullPointerException npe) {
+                } catch (NullPointerException e) {
                     /* case attribute not found */
-                    throw new KunderaException("Cannot find Java type for " + column + ": ", npe);
+                    throw new KunderaException("Cannot find Java type for " + column + ": ", e);
                 }
             }
         }
