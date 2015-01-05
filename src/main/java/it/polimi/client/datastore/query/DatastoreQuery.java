@@ -87,11 +87,12 @@ public class DatastoreQuery extends QueryImpl {
         MetamodelImpl metaModel = (MetamodelImpl) kunderaMetadata.getApplicationMetadata().getMetamodel(entityMetadata.getPersistenceUnit());
         EntityType entityType = metaModel.entity(entityMetadata.getEntityClazz());
 
-        QueryBuilder builder = new QueryBuilder(entityMetadata, entityType, holdRelationships, super.getMaxResults());
+        QueryBuilder builder = new QueryBuilder(entityMetadata, entityType, holdRelationships);
         builder.setFrom(entityMetadata.getTableName())
                 .addProjections(super.getColumns(kunderaQuery.getResult(), entityMetadata))
                 .addFilters(kunderaQuery.getFilterClauseQueue())
-                .addOrderings(kunderaQuery.getOrdering());
+                .addOrderings(kunderaQuery.getOrdering())
+                .setLimit(super.getMaxResults());
         return builder;
     }
 

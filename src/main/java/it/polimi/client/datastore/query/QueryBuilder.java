@@ -26,24 +26,19 @@ import java.util.*;
 public class QueryBuilder {
 
     private Query query;
-    private String kind;
-    private final int limit;
+
     private final EntityType entityType;
     private final EntityMetadata entityMetadata;
-    /** true if {@link EntityType} of the query holds relationships with other entities */
+
+    private int limit;
     private boolean holdRelationships;
-    /** true if the select query is different from "SELECT *" */
-    private boolean isProjectionQuery;
     private Map<String, Class> projections;
 
-    public QueryBuilder(EntityMetadata entityMetadata, EntityType entityType, boolean holdRelationships, int maxResults) {
+    public QueryBuilder(EntityMetadata entityMetadata, EntityType entityType, boolean holdRelationships) {
         this.entityMetadata = entityMetadata;
         this.entityType = entityType;
-        this.kind = getEntityClass().getSimpleName();
         this.holdRelationships = holdRelationships;
-        this.isProjectionQuery = false;
         this.projections = new HashMap<>();
-        this.limit = maxResults;
     }
 
     public Query getQuery() {
@@ -58,16 +53,16 @@ public class QueryBuilder {
         return this.holdRelationships;
     }
 
-    public boolean isProjectionQuery() {
-        return this.isProjectionQuery;
+    public int getLimit() {
+        return this.limit;
     }
 
     public Set<String> getProjections() {
         return this.projections.keySet();
     }
 
-    public int getLimit() {
-        return this.limit;
+    public boolean isProjectionQuery() {
+        return !this.projections.isEmpty();
     }
 
     /**
@@ -83,6 +78,18 @@ public class QueryBuilder {
     }
 
     /**
+     * Set a limit to the query.
+     *
+     * @param limit an {@code int} limit value.
+     *
+     * @return this, for chaining.
+     */
+    public QueryBuilder setLimit(int limit) {
+        this.limit = limit;
+        return this;
+    }
+
+    /**
      * Add multiple projections to the query.
      *
      * @param columns array of column names on which add a projection.
@@ -94,7 +101,6 @@ public class QueryBuilder {
      */
     public QueryBuilder addProjections(String[] columns) {
         if (columns.length != 0) {
-            this.isProjectionQuery = true;
             for (String column : columns) {
                 try {
                     String filedName = entityMetadata.getFieldName(column);
@@ -110,7 +116,7 @@ public class QueryBuilder {
     }
 
     /**
-     * Add a projection to the query.
+     * Add a single projection to the query.
      *
      * @param column     the column name.
      * @param columnType Java type of the column.
@@ -122,53 +128,6 @@ public class QueryBuilder {
     public QueryBuilder addProjection(String column, Class columnType) {
         this.projections.put(column, columnType);
         this.query.addProjection(new PropertyProjection(column, columnType));
-        return this;
-    }
-
-    /**
-     * Add multiple filters to the query.
-     *
-     * @param filterClauseQueue filter clause queue from {@link com.impetus.kundera.query.KunderaQuery}.
-     *
-     * @return this, for chaining.
-     *
-     * @see com.impetus.kundera.query.KunderaQuery.FilterClause
-     * @see com.google.appengine.api.datastore.Query.Filter
-     */
-    public QueryBuilder addFilters(Queue filterClauseQueue) {
-        boolean isComposite = false;
-        String composeOperator = null;
-        Query.Filter previousFilter = null;
-
-        for (Object filterClause : filterClauseQueue) {
-            if (filterClause instanceof KunderaQuery.FilterClause) {
-                Query.Filter propertyFilter = generatePropertyFilter((KunderaQuery.FilterClause) filterClause);
-                if (!isComposite) {
-                    addFilter(propertyFilter);
-                } else {
-                    propertyFilter = composeFilter(propertyFilter, composeOperator, previousFilter);
-                    addFilter(propertyFilter);
-                }
-                previousFilter = propertyFilter;
-            } else if (filterClause instanceof String) {
-                isComposite = true;
-                composeOperator = filterClause.toString().trim();
-            }
-        }
-        return this;
-    }
-
-    /**
-     * Add a filters to the query.
-     *
-     * @param propertyFilter datastore {@link com.google.appengine.api.datastore.Query.Filter}.
-     *
-     * @return this, for chaining.
-     *
-     * @see com.google.appengine.api.datastore.Query.Filter
-     */
-    public QueryBuilder addFilter(Query.Filter propertyFilter) {
-        this.query.setFilter(propertyFilter);
         return this;
     }
 
@@ -216,6 +175,62 @@ public class QueryBuilder {
         return this;
     }
 
+    private Query.SortDirection parseOrdering(KunderaQuery.SortOrder order) {
+        if (order.equals(KunderaQuery.SortOrder.ASC)) {
+            return Query.SortDirection.ASCENDING;
+        } else if (order.equals(KunderaQuery.SortOrder.DESC)) {
+            return Query.SortDirection.DESCENDING;
+        }
+        throw new KunderaException("Ordering " + order + " is not supported by Datastore");
+    }
+
+    /**
+     * Add multiple filters to the query.
+     *
+     * @param filterClauseQueue filter clause queue from {@link com.impetus.kundera.query.KunderaQuery}.
+     *
+     * @return this, for chaining.
+     *
+     * @see com.impetus.kundera.query.KunderaQuery.FilterClause
+     * @see com.google.appengine.api.datastore.Query.Filter
+     */
+    public QueryBuilder addFilters(Queue filterClauseQueue) {
+        boolean isComposite = false;
+        String composeOperator = null;
+        Query.Filter previousFilter = null;
+
+        for (Object filterClause : filterClauseQueue) {
+            if (filterClause instanceof KunderaQuery.FilterClause) {
+                Query.Filter propertyFilter = generatePropertyFilter((KunderaQuery.FilterClause) filterClause);
+                if (!isComposite) {
+                    addFilter(propertyFilter);
+                } else {
+                    propertyFilter = composeFilter(propertyFilter, composeOperator, previousFilter);
+                    addFilter(propertyFilter);
+                }
+                previousFilter = propertyFilter;
+            } else if (filterClause instanceof String) {
+                isComposite = true;
+                composeOperator = filterClause.toString().trim();
+            }
+        }
+        return this;
+    }
+
+    /**
+     * Add a single filter to the query.
+     *
+     * @param propertyFilter datastore {@link com.google.appengine.api.datastore.Query.Filter}.
+     *
+     * @return this, for chaining.
+     *
+     * @see com.google.appengine.api.datastore.Query.Filter
+     */
+    public QueryBuilder addFilter(Query.Filter propertyFilter) {
+        this.query.setFilter(propertyFilter);
+        return this;
+    }
+
     private Query.Filter composeFilter(Query.Filter propertyFilter, String composeOperator, Query.Filter previousFilter) {
         if (composeOperator.equalsIgnoreCase("AND")) {
             return Query.CompositeFilterOperator.and(previousFilter,
@@ -242,7 +257,7 @@ public class QueryBuilder {
             return new Query.FilterPredicate(property, operator, key);
         } else if (property.equals(idColumnName)) {
             /* filter on entity ID */
-            Key key = DatastoreUtils.createKey(this.kind, filterValue);
+            Key key = DatastoreUtils.createKey(this.query.getKind(), filterValue);
             return new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, operator, key);
         } else if (operator.equals(Query.FilterOperator.IN)) {
             /* handle filterValue in case of IN operator*/
@@ -292,14 +307,5 @@ public class QueryBuilder {
         }
         /* BETWEEN is automatically converted in (X >= K1 AND X <= K2) by Kundera */
         throw new KunderaException("Condition " + condition + " is not supported by Datastore");
-    }
-
-    private Query.SortDirection parseOrdering(KunderaQuery.SortOrder order) {
-        if (order.equals(KunderaQuery.SortOrder.ASC)) {
-            return Query.SortDirection.ASCENDING;
-        } else if (order.equals(KunderaQuery.SortOrder.DESC)) {
-            return Query.SortDirection.DESCENDING;
-        }
-        throw new KunderaException("Ordering " + order + " is not supported by Datastore");
     }
 }
