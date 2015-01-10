@@ -16,6 +16,9 @@ import java.io.*;
  */
 public class DatastoreUtils {
 
+    private DatastoreUtils() {
+    }
+
     /**
      * Generate a datastore {@link com.google.appengine.api.datastore.Entity} from
      * {@link com.impetus.kundera.metadata.model.EntityMetadata}.

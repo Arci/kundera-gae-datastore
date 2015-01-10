@@ -222,10 +222,10 @@ public class QueryBuilder {
     }
 
     private Query.Filter composeFilter(Query.Filter propertyFilter, String composeOperator, Query.Filter previousFilter) {
-        if (composeOperator.equalsIgnoreCase("AND")) {
+        if ("AND".equalsIgnoreCase(composeOperator)) {
             return Query.CompositeFilterOperator.and(previousFilter,
                     propertyFilter);
-        } else if (composeOperator.equalsIgnoreCase("OR")) {
+        } else if ("OR".equalsIgnoreCase(composeOperator)) {
             return Query.CompositeFilterOperator.or(previousFilter,
                     propertyFilter);
         }
@@ -245,11 +245,13 @@ public class QueryBuilder {
             String targetKind = relation.getTargetEntity().getSimpleName();
             Key key = DatastoreUtils.createKey(targetKind, filterValue);
             return new Query.FilterPredicate(property, operator, key);
-        } else if (property.equals(idColumnName)) {
+        }
+        if (property.equals(idColumnName)) {
             /* filter on entity ID */
             Key key = DatastoreUtils.createKey(this.query.getKind(), filterValue);
             return new Query.FilterPredicate(Entity.KEY_RESERVED_PROPERTY, operator, key);
-        } else if (operator.equals(Query.FilterOperator.IN)) {
+        }
+        if (operator.equals(Query.FilterOperator.IN)) {
             /* handle filterValue in case of IN operator*/
             if (filterValue instanceof String) {
                 filterValue = toCollection((String) filterValue);
@@ -257,10 +259,9 @@ public class QueryBuilder {
                 throw new KunderaException("For IN operator value must be either a Collection or a String like ('a', 'b', 'c')");
             }
             return new Query.FilterPredicate(property, operator, filterValue);
-        } else {
-            /* filter on entity filed */
-            return new Query.FilterPredicate(property, operator, filterValue);
         }
+        /* filter on entity filed */
+        return new Query.FilterPredicate(property, operator, filterValue);
     }
 
     /*
@@ -268,9 +269,9 @@ public class QueryBuilder {
      * transform the string like ('Fabio', 'Crizia') to Collection
      */
     private Collection<Object> toCollection(String filterValue) {
-        filterValue = filterValue.substring(1, filterValue.length() - 1); //remove parenthesis ()
-        filterValue = filterValue.replace("'", "").trim();
-        String[] elements = filterValue.split(",");
+        // remove parenthesis and quotes
+        String filter = filterValue.substring(1, filterValue.length() - 1).replace("'", "").trim();
+        String[] elements = filter.split(",");
         List<Object> trimmed = new ArrayList<>();
         for (String el : elements) {
             trimmed.add(el.trim());
@@ -279,6 +280,7 @@ public class QueryBuilder {
     }
 
     private Query.FilterOperator parseCondition(String condition) {
+        /* BETWEEN is automatically converted in (X >= K1 AND X <= K2) by Kundera */
         switch (condition) {
             case "=":
                 return Query.FilterOperator.EQUAL;
@@ -294,8 +296,8 @@ public class QueryBuilder {
                 return Query.FilterOperator.LESS_THAN_OR_EQUAL;
             case "IN":
                 return Query.FilterOperator.IN;
+            default:
+                throw new KunderaException("Condition " + condition + " is not supported by Datastore");
         }
-        /* BETWEEN is automatically converted in (X >= K1 AND X <= K2) by Kundera */
-        throw new KunderaException("Condition " + condition + " is not supported by Datastore");
     }
 }

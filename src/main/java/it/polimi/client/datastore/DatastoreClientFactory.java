@@ -30,15 +30,11 @@ import java.util.Properties;
  */
 public class DatastoreClientFactory extends GenericClientFactory {
 
-    private static Logger logger;
+    private static Logger logger = LoggerFactory.getLogger(DatastoreClientFactory.class);
     private EntityReader reader;
     private SchemaManager schemaManager;
     private RemoteApiInstaller installer;
     private DatastoreService datastore;
-
-    static {
-        logger = LoggerFactory.getLogger(DatastoreClientFactory.class);
-    }
 
     @Override
     public void initialize(Map<String, Object> puProperties) {
@@ -135,58 +131,50 @@ public class DatastoreClientFactory extends GenericClientFactory {
 
     private void initializeConnection(String nodes, String port, String username, String password) {
         logger.debug("Trying to connect using remote API");
-        int connection_port = DatastoreConstants.DEFAULT_PORT;
+        int connectionPort = DatastoreConstants.DEFAULT_PORT;
         if (port != null) {
             try {
-                connection_port = Integer.parseInt(port);
+                connectionPort = Integer.parseInt(port);
             } catch (NumberFormatException e) {
                 throw new ClientLoaderException("Invalid port " + port + ": ", e);
             }
         }
         try {
-            RemoteApiOptions options = new RemoteApiOptions().server(nodes, connection_port).credentials(username, password);
+            RemoteApiOptions options = new RemoteApiOptions().server(nodes, connectionPort).credentials(username, password);
             this.installer = new RemoteApiInstaller();
             this.installer.install(options);
-            logger.info("Connected to Datastore at " + nodes + ":" + connection_port);
+            logger.info("Connected to Datastore at " + nodes + ":" + connectionPort);
         } catch (IOException e) {
-            throw new ClientLoaderException("Unable to connect to Datastore at " + nodes + ":" + connection_port + ": ", e);
+            throw new ClientLoaderException("Unable to connect to Datastore at " + nodes + ":" + connectionPort + ": ", e);
         }
     }
 
     private DatastoreServiceConfig buildConfiguration() {
         Properties properties = getClientSpecificProperties();
         DatastoreServiceConfig config = DatastoreServiceConfig.Builder.withDefaults();
-        if (properties != null) {
-            logger.info("Initialize datastore with:");
-            ReadPolicy readPolicy = parseReadPolicy(properties);
-            Double deadline = parseDeadline(properties);
-            ImplicitTransactionManagementPolicy transactionPolicy = parseTransactionPolicy(properties);
-            try {
-                if (readPolicy != null) {
-                    config = DatastoreServiceConfig.Builder.withReadPolicy(readPolicy);
-                    logger.info("\tread policy [" + readPolicy.getConsistency() + "]");
-                    if (deadline != null) {
-                        config.deadline(deadline);
-                        logger.info("\tdeadline [" + deadline + "]");
-                    }
-                    if (transactionPolicy != null) {
-                        config.implicitTransactionManagementPolicy(transactionPolicy);
-                        logger.info("\ttransaction policy [" + transactionPolicy.name() + "]");
-                    }
-                } else if (deadline != null) {
-                    config = DatastoreServiceConfig.Builder.withDeadline(deadline);
-                    logger.info("\tdeadline [" + deadline + "]");
-                    if (transactionPolicy != null) {
-                        config.implicitTransactionManagementPolicy(transactionPolicy);
-                        logger.info("\ttransaction policy [" + transactionPolicy.name() + "]");
-                    }
-                } else if (transactionPolicy != null) {
-                    config = DatastoreServiceConfig.Builder.withImplicitTransactionManagementPolicy(transactionPolicy);
-                    logger.info("\ttransaction policy [" + transactionPolicy.name() + "]");
-                }
-            } catch (IllegalArgumentException | NullPointerException e) {
-                throw new ClientLoaderException("Some error occurred creating Datastore configuration: ", e);
+        if (properties == null) {
+            return config;
+        }
+
+        logger.info("Initialize datastore with:");
+        ReadPolicy readPolicy = parseReadPolicy(properties);
+        Double deadline = parseDeadline(properties);
+        ImplicitTransactionManagementPolicy transactionPolicy = parseTransactionPolicy(properties);
+        try {
+            if (readPolicy != null) {
+                logger.info("\tread policy [" + readPolicy.getConsistency() + "]");
+                config.readPolicy(readPolicy);
             }
+            if (deadline != null) {
+                logger.info("\tdeadline [" + deadline + "]");
+                config.deadline(deadline);
+            }
+            if (transactionPolicy != null) {
+                logger.info("\ttransaction policy [" + transactionPolicy.name() + "]");
+                config.implicitTransactionManagementPolicy(transactionPolicy);
+            }
+        } catch (IllegalArgumentException e) {
+            throw new ClientLoaderException("Some error occurred creating Datastore configuration: ", e);
         }
         return config;
     }

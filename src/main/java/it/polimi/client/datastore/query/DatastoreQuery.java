@@ -49,7 +49,7 @@ public class DatastoreQuery extends QueryImpl {
     @Override
     protected List<Object> populateEntities(EntityMetadata m, Client client) {
         if (logger.isDebugEnabled()) {
-            printQuery();
+            logger.info(this.getQueryString());
         }
 
         QueryBuilder builder = translateQuery(this.kunderaQuery, false);
@@ -62,7 +62,7 @@ public class DatastoreQuery extends QueryImpl {
     @Override
     protected List<Object> recursivelyPopulateEntities(EntityMetadata m, Client client) {
         if (logger.isDebugEnabled()) {
-            printQuery();
+            logger.info(this.getQueryString());
         }
 
         QueryBuilder builder = translateQuery(this.kunderaQuery, true);
@@ -76,7 +76,7 @@ public class DatastoreQuery extends QueryImpl {
     @Override
     protected int onExecuteUpdate() {
         if (logger.isDebugEnabled()) {
-            printQuery();
+            logger.info(this.getQueryString());
         }
 
         return onUpdateDeleteEvent();
@@ -115,8 +115,8 @@ public class DatastoreQuery extends QueryImpl {
     /*---------------------------------------------------------------------------------*/
     /*--------------------- print utils for DEBUG purposes ----------------------------*/
 
-    private void printQuery() {
-        System.out.println("kunderaQuery = [\n\t" +
+    private String getQueryString() {
+        return "kunderaQuery = [\n\t" +
                 "from = " + this.kunderaQuery.getFrom() + "\n\t" +
                 "entityClass = " + this.kunderaQuery.getEntityClass() + "\n\t" +
                 "entityAlias = " + this.kunderaQuery.getEntityAlias() + "\n\t" +
@@ -129,7 +129,7 @@ public class DatastoreQuery extends QueryImpl {
                 "columnsToSelect = " + columnsString() + "\n\t" +
                 "updateQueue = " + updateClauseQueueString() + "\n\t" +
                 "filterQueue = " + this.kunderaQuery.getFilterClauseQueue() + "\n\t" +
-                "limit = " + super.getMaxResults() + "\n]\n");
+                "limit = " + super.getMaxResults() + "\n]\n";
     }
 
     private String resultString() {

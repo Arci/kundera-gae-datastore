@@ -25,13 +25,9 @@ import java.util.Map;
  */
 public class DatastoreSchemaManager extends AbstractSchemaManager implements SchemaManager {
 
-    private static final Logger logger;
+    private static final Logger logger = LoggerFactory.getLogger(DatastoreSchemaManager.class);
     private RemoteApiInstaller installer;
     private DatastoreService datastore;
-
-    static {
-        logger = LoggerFactory.getLogger(DatastoreSchemaManager.class);
-    }
 
     public DatastoreSchemaManager(String clientFactory, Map<String, Object> externalProperties, EntityManagerFactoryImpl.KunderaMetadata kunderaMetadata) {
         super(clientFactory, externalProperties, kunderaMetadata);

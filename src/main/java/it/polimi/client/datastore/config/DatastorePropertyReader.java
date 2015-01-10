@@ -49,7 +49,7 @@ public class DatastorePropertyReader extends AbstractPropertyReader implements P
         public DataStore getDataStore() {
             if (getClientProperties() != null && getClientProperties().getDatastores() != null) {
                 for (DataStore dataStore : getClientProperties().getDatastores()) {
-                    if (dataStore.getName() != null && dataStore.getName().trim().equalsIgnoreCase("datastore")) {
+                    if (dataStore.getName() != null && "datastore".equalsIgnoreCase(dataStore.getName().trim())) {
                         return dataStore;
                     }
                 }

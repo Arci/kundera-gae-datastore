@@ -45,11 +45,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
 
     private EntityReader reader;
     private DatastoreService datastore;
-    private static final Logger logger;
-
-    static {
-        logger = LoggerFactory.getLogger(DatastoreClient.class);
-    }
+    private static final Logger logger = LoggerFactory.getLogger(DatastoreClient.class);
 
     protected DatastoreClient(final KunderaMetadata kunderaMetadata, Map<String, Object> properties,
                               String persistenceUnit, final ClientMetadata clientMetadata, IndexManager indexManager,
@@ -279,18 +275,17 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         Set<Attribute> attributes = entityType.getAttributes();
         for (Attribute attribute : attributes) {
             // ignore id attribute, handled in initializeID(...)
-            if (!((AbstractAttribute) attribute).getJPAColumnName().equals(idAttribute)) {
-                if (!attribute.isAssociation()) {
-                    if (metamodel.isEmbeddable(((AbstractAttribute) attribute).getBindableJavaType())) {
-                        initializeEmbeddedAttribute(gaeEntity, entity, attribute, metamodel);
-                    } else {
-                        initializeAttribute(gaeEntity, entity, attribute);
-                    }
+            if (((AbstractAttribute) attribute).getJPAColumnName().equals(idAttribute)) {
+                continue;
+            }
+            if (!attribute.isAssociation()) {
+                if (metamodel.isEmbeddable(((AbstractAttribute) attribute).getBindableJavaType())) {
+                    initializeEmbeddedAttribute(gaeEntity, entity, attribute, metamodel);
                 } else {
-                    if (!relationWillBeFilledByQuery(entityMetadata, attribute)) {
-                        initializeRelation(gaeEntity, attribute, relationMap);
-                    }
+                    initializeAttribute(gaeEntity, entity, attribute);
                 }
+            } else if (!relationWillBeFilledByQuery(entityMetadata, attribute)) {
+                initializeRelation(gaeEntity, attribute, relationMap);
             }
         }
         logger.info(entity.toString());
