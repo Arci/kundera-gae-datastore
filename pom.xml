@@ -23,20 +23,7 @@
             <artifactId>kundera-core</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.impetus.kundera.core</groupId>
-            <artifactId>fallback-impl</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.impetus.kundera.core</groupId>
-            <artifactId>kundera-core</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
+
         <!-- GAE -->
         <dependency>
             <groupId>com.google.appengine</groupId>
@@ -71,6 +58,20 @@
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.11</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.impetus.kundera.core</groupId>
+            <artifactId>kundera-core</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.impetus.kundera.core</groupId>
+            <artifactId>fallback-impl</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -113,7 +114,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.2</version>
                 <configuration>
                     <source>1.7</source>
                     <target>1.7</target>
