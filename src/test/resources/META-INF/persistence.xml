@@ -4,7 +4,6 @@
              xsi:schemaLocation="http://java.sun.com/xml/ns/persistence http://java.sun.com/xml/ns/persistence/persistence_1_0.xsd">
     <persistence-unit name="pu">
         <provider>com.impetus.kundera.KunderaPersistence</provider>
-        <class>it.polimi.kundera.client.datastore.entities.Address</class>
         <class>it.polimi.kundera.client.datastore.entities.AddressCollection</class>
         <class>it.polimi.kundera.client.datastore.entities.Department</class>
         <class>it.polimi.kundera.client.datastore.entities.DepartmentOTM</class>
@@ -22,7 +21,6 @@
         <class>it.polimi.kundera.client.datastore.entities.PhoneLong</class>
         <class>it.polimi.kundera.client.datastore.entities.PhoneOTO</class>
         <class>it.polimi.kundera.client.datastore.entities.PhoneString</class>
-        <class>it.polimi.kundera.client.datastore.entities.PhoneType</class>
         <class>it.polimi.kundera.client.datastore.entities.Project</class>
         <class>it.polimi.kundera.client.datastore.entities.ProjectMTM</class>
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
@@ -34,7 +32,6 @@
 
     <persistence-unit name="remote-pu">
         <provider>com.impetus.kundera.KunderaPersistence</provider>
-        <class>it.polimi.kundera.client.datastore.entities.Address</class>
         <class>it.polimi.kundera.client.datastore.entities.AddressCollection</class>
         <class>it.polimi.kundera.client.datastore.entities.Department</class>
         <class>it.polimi.kundera.client.datastore.entities.DepartmentOTM</class>
@@ -52,7 +49,6 @@
         <class>it.polimi.kundera.client.datastore.entities.PhoneLong</class>
         <class>it.polimi.kundera.client.datastore.entities.PhoneOTO</class>
         <class>it.polimi.kundera.client.datastore.entities.PhoneString</class>
-        <class>it.polimi.kundera.client.datastore.entities.PhoneType</class>
         <class>it.polimi.kundera.client.datastore.entities.Project</class>
         <class>it.polimi.kundera.client.datastore.entities.ProjectMTM</class>
         <exclude-unlisted-classes>true</exclude-unlisted-classes>
