@@ -136,20 +136,19 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
     }
 
     /*
-     * drops (if exists) schema and then creates schema tables based on entity definitions.
+     * creates schema tables based on entity definitions.
      */
     @Override
     protected void create(List<TableInfo> tableInfo) {
         /* no need to create schema, tables are created when first entity is persisted */
-        dropSchema();
-        uninstall();
     }
 
     /*
-     * drops (if exists) schema, creates schema tables based on entity definitions.
+     * drops (if exists) schema, then creates schema tables based on entity definitions.
      */
     @Override
     protected void create_drop(List<TableInfo> tableInfo) {
+        dropSchema();
         create(tableInfo);
         uninstall();
     }
