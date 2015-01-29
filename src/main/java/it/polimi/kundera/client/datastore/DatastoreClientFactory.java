@@ -146,6 +146,9 @@ public class DatastoreClientFactory extends GenericClientFactory {
             logger.info("Connected to Datastore at " + nodes + ":" + connectionPort);
         } catch (IOException e) {
             throw new ClientLoaderException("Unable to connect to Datastore at " + nodes + ":" + connectionPort + ": ", e);
+        } catch (IllegalStateException e) {
+            // Remote API already installed
+            logger.warn(e.getMessage());
         }
     }
 
