@@ -1,22 +1,22 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <clientProperties>
-    <datastores>
-        <dataStore>
-            <name>datastore</name>
-            <connection>
-                <properties>
-                    <!-- optional, if present is created a fictitious root and every entity will be child -->
-                    <!-- TODO decide if necessary -->
-                    <property name="datastore.fictitious" value="fRoot"></property>
+	<datastores>
+		<dataStore>
+			<name>datastore</name>
+			<connection>
+				<properties>
+					<!-- optional, if present is created a fictitious root and every entity will be child -->
+					<!-- TODO decide if necessary -->
+					<property name="datastore.fictitious" value="fRoot"></property>
 
-                    <!-- optional, can be "eventual" or "strong" -->
-                    <property name="datastore.policy.read" value="strong"></property>
-                    <!-- optional, RPCs deadline in seconds -->
-                    <property name="datastore.deadline" value="5"></property>
-                    <!-- optional, implicit transactions, can be "auto" or "none" -->
-                    <property name="datastore.policy.transaction" value="none"></property>
-                </properties>
-            </connection>
-        </dataStore>
-    </datastores>
+					<!-- optional, can be "eventual" or "strong" -->
+					<property name="datastore.policy.read" value="strong"></property>
+					<!-- optional, RPCs deadline in seconds -->
+					<property name="datastore.deadline" value="5"></property>
+					<!-- optional, implicit transactions, can be "auto" or "none" -->
+					<property name="datastore.policy.transaction" value="none"></property>
+				</properties>
+			</connection>
+		</dataStore>
+	</datastores>
 </clientProperties>
