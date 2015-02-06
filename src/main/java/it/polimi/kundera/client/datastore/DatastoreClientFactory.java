@@ -99,7 +99,12 @@ public class DatastoreClientFactory extends GenericClientFactory {
         }
         if (installer != null) {
             logger.debug("Uninstall remote API connection");
-            installer.uninstall();
+            try {
+                installer.uninstall();
+            } catch (IllegalArgumentException e) {
+                // already uninstalled
+                logger.warn(e.getMessage());
+            }
         }
         datastore = null;
         schemaManager = null;

@@ -9,6 +9,7 @@ import com.impetus.kundera.configure.schema.api.AbstractSchemaManager;
 import com.impetus.kundera.configure.schema.api.SchemaManager;
 import com.impetus.kundera.loader.ClientLoaderException;
 import com.impetus.kundera.persistence.EntityManagerFactoryImpl;
+import it.polimi.kundera.client.datastore.config.DatastoreConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,6 +99,9 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
     @Override
     protected boolean initiateClient() {
         if (hosts != null && userName != null && password != null) {
+            if (port == null) {
+                port = String.valueOf(DatastoreConstants.DEFAULT_PORT);
+            }
             try {
                 RemoteApiOptions options = new RemoteApiOptions()
                         .server(hosts[0], Integer.valueOf(port))
@@ -107,6 +111,9 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
                 logger.info("Connected to Datastore at " + hosts[0] + ":" + port);
             } catch (IOException e) {
                 throw new ClientLoaderException("Unable to connect to Datastore at " + hosts[0] + ":" + port + ": ", e);
+            } catch (IllegalStateException e) {
+                // Remote API already installed
+                logger.warn(e.getMessage());
             }
         } else {
             logger.info("Get reference from local Datastore");
@@ -174,7 +181,12 @@ public class DatastoreSchemaManager extends AbstractSchemaManager implements Sch
 
     private void uninstall() {
         if (installer != null) {
-            installer.uninstall();
+            try {
+                installer.uninstall();
+            } catch (IllegalArgumentException e) {
+                // already uninstalled
+                logger.warn(e.getMessage());
+            }
         }
     }
 }
