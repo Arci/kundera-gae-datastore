@@ -5,10 +5,6 @@
 			<name>datastore</name>
 			<connection>
 				<properties>
-					<!-- optional, if present is created a fictitious root and every entity will be child -->
-					<!-- TODO decide if necessary -->
-					<property name="datastore.fictitious" value="fRoot"></property>
-
 					<!-- optional, can be "eventual" or "strong" -->
 					<property name="datastore.policy.read" value="strong"></property>
 					<!-- optional, RPCs deadline in seconds -->
