@@ -16,6 +16,9 @@ import java.io.*;
  */
 public class DatastoreUtils {
 
+    public static final int MAX_KEY_PARTS = 2;
+    public static final String SEPARATOR = "_";
+
     private DatastoreUtils() {
     }
 
@@ -91,6 +94,42 @@ public class DatastoreUtils {
             return KeyFactory.createKey(kind, (Long) id);
         }
         return KeyFactory.createKey(kind, (String) id);
+    }
+
+    /**
+     * Returns the key representation as string in the form {@code keyKind_keyID}.
+     *
+     * @param key the key to be converted
+     *
+     * @return a string representation
+     */
+    public static String getStorableKey(Key key) {
+        Object id = key.getName();
+        if (id == null) {
+            /* case datastore generated long */
+            id = key.getId();
+        }
+        return key.getKind() + SEPARATOR + id;
+    }
+
+    /**
+     * Reconstruct a {@link com.google.appengine.api.datastore.Key} from its storable string representation.
+     *
+     * @param rawKey the Key string representation
+     *
+     * @return an instance of  {@link com.google.appengine.api.datastore.Key} representing the key.¬
+     */
+    public static Key keyFromStorableKey(String rawKey) {
+        if (rawKey == null) {
+            throw new NullPointerException("key cannot be null");
+        }
+        String[] parts = rawKey.split(SEPARATOR);
+        if (parts.length == 0 || parts.length != MAX_KEY_PARTS) {
+            throw new IllegalArgumentException("key [" + rawKey + "], is malformed and cannot be parsed");
+        }
+        String kind = parts[0];
+        String id = parts[1];
+        return KeyFactory.createKey(kind, id);
     }
 
     /**

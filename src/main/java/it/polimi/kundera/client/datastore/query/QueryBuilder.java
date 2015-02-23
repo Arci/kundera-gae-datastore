@@ -244,7 +244,8 @@ public class QueryBuilder {
             Relation relation = entityMetadata.getRelation(filedName);
             String targetKind = relation.getTargetEntity().getSimpleName();
             Key key = DatastoreUtils.createKey(targetKind, filterValue);
-            return new Query.FilterPredicate(property, operator, key);
+            String storableKey = DatastoreUtils.getStorableKey(key);
+            return new Query.FilterPredicate(property, operator, storableKey);
         }
         if (property.equals(idColumnName)) {
             /* filter on entity ID */

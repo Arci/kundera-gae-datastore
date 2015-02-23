@@ -170,7 +170,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
                     EntityMetadata targetMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, relation.getTargetEntity());
                     Key targetKey = DatastoreUtils.createKey(targetMetadata.getTableName(), targetId);
                     logger.debug("field = [" + fieldName + "], jpaColumnName = [" + jpaColumnName + "], targetKey = [" + targetKey + "]");
-                    gaeEntity.setProperty(jpaColumnName, targetKey);
+                    String storableKey = DatastoreUtils.getStorableKey(targetKey);
+                    gaeEntity.setProperty(jpaColumnName, storableKey);
                 }
             }
         }
@@ -366,7 +367,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         logger.debug("jpaColumnName = [" + jpaColumnName + "], fieldValue = [" + fieldValue + "]");
 
         if (jpaColumnName != null && fieldValue != null) {
-            relationMap.put(jpaColumnName, fieldValue);
+            Key targetKey = DatastoreUtils.keyFromStorableKey(fieldValue.toString());
+            relationMap.put(jpaColumnName, targetKey);
         }
     }
 
@@ -421,8 +423,9 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         EntityMetadata targetMetadata = KunderaMetadataManager.getEntityMetadata(kunderaMetadata, relation.getTargetEntity());
         String targetTableName = targetMetadata.getTableName();
         Key targetKey = DatastoreUtils.createKey(targetTableName, colValue);
+        String storableKey = DatastoreUtils.getStorableKey(targetKey);
 
-        Query query = generateRelationQuery(tableName, colName, targetKey);
+        Query query = generateRelationQuery(tableName, colName, storableKey);
         query.setKeysOnly();
 
         List<Object> results = new ArrayList<>();
