@@ -46,7 +46,7 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     private EntityReader reader;
     private DatastoreService datastore;
     private static final Logger logger = LoggerFactory.getLogger(DatastoreClient.class);
-    private Map<String, String> ownerJoinTableMap = new HashMap<>();
+    private Map<String, String> ownerJoinTableMap;
     private Map<String, String> inverseJoinTableMap;
 
     protected DatastoreClient(final KunderaMetadata kunderaMetadata, Map<String, Object> properties,
