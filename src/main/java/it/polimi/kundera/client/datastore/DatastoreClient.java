@@ -46,6 +46,8 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     private EntityReader reader;
     private DatastoreService datastore;
     private static final Logger logger = LoggerFactory.getLogger(DatastoreClient.class);
+    private Map<String, String> ownerJoinTableMap = new HashMap<>();
+    private Map<String, String> inverseJoinTableMap;
 
     protected DatastoreClient(final KunderaMetadata kunderaMetadata, Map<String, Object> properties,
                               String persistenceUnit, final ClientMetadata clientMetadata, IndexManager indexManager,
@@ -55,6 +57,43 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         this.datastore = datastore;
         this.indexManager = indexManager;
         this.clientMetadata = clientMetadata;
+        this.ownerJoinTableMap = new HashMap<>();
+        this.inverseJoinTableMap = new HashMap<>();
+    }
+
+    private String getOwnerJoinTableName(String joinTableName) {
+        if (this.ownerJoinTableMap.get(joinTableName) == null) {
+            fillMetadataForJoinTable(joinTableName);
+        }
+        return this.ownerJoinTableMap.get(joinTableName);
+    }
+
+    private String getInverseJoinTableName(String joinTableName) {
+        if (this.inverseJoinTableMap.get(joinTableName) == null) {
+            fillMetadataForJoinTable(joinTableName);
+        }
+        return this.inverseJoinTableMap.get(joinTableName);
+    }
+
+    private void fillMetadataForJoinTable(String joinTableName) {
+        MetamodelImpl metamodel = KunderaMetadataManager.getMetamodel(kunderaMetadata, persistenceUnit);
+        Map<String, Class<?>> entityNameToClassMap = metamodel.getEntityNameToClassMap();
+        for (String entityName : entityNameToClassMap.keySet()) {
+            EntityMetadata entityMetadata = metamodel.getEntityMetadata(entityNameToClassMap.get(entityName));
+            if (entityMetadata.isRelationViaJoinTable()) {
+                for (Relation r : entityMetadata.getRelations()) {
+                    if (r.isRelatedViaJoinTable() && r.getJoinTableMetadata().getJoinTableName().equals(joinTableName)) {
+                        this.ownerJoinTableMap.put(joinTableName, entityMetadata.getTableName());
+                        logger.warn("joinColumnTable: " + entityMetadata.getTableName());
+                        this.inverseJoinTableMap.put(joinTableName, metamodel.getEntityMetadata(r.getTargetEntity()).getTableName());
+                        logger.warn("inverseJoinColumnTable: " + metamodel.getEntityMetadata(r.getTargetEntity()).getTableName());
+                    }
+                }
+            }
+        }
+        if (this.ownerJoinTableMap.get(joinTableName) == null || this.inverseJoinTableMap.get(joinTableName) == null) {
+            throw new KunderaException("Failed to determine table names for participants in join table [" + joinTableName + "]");
+        }
     }
 
     @Override
@@ -208,13 +247,18 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
         String inverseJoinColumnName = joinTableData.getInverseJoinColumnName();
         Map<Object, Set<Object>> joinTableRecords = joinTableData.getJoinTableRecords();
 
+        String joinColumnTable = getOwnerJoinTableName(joinTableName);
+        String inverseJoinColumnTable = getInverseJoinTableName(joinTableName);
+
         for (Object owner : joinTableRecords.keySet()) {
             Set<Object> children = joinTableRecords.get(owner);
+            String ownerStorableKey = DatastoreUtils.getStorableKey(joinColumnTable, owner);
             for (Object child : children) {
                 /* let datastore generate ID for the entity */
                 Entity gaeEntity = DatastoreUtils.createDatastoreEntity(joinTableName);
-                gaeEntity.setProperty(joinColumnName, owner);
-                gaeEntity.setProperty(inverseJoinColumnName, child);
+                String childStorableKey = DatastoreUtils.getStorableKey(inverseJoinColumnTable, child);
+                gaeEntity.setProperty(joinColumnName, ownerStorableKey);
+                gaeEntity.setProperty(inverseJoinColumnName, childStorableKey);
                 datastore.put(gaeEntity);
                 logger.info(gaeEntity.toString());
             }
@@ -450,14 +494,17 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     public <E> List<E> getColumnsById(String schemaName, String tableName, String pKeyColumnName, String columnName, Object pKeyColumnValue, Class columnJavaType) {
         logger.debug("schemaName = [" + schemaName + "], tableName = [" + tableName + "], pKeyColumnName = [" + pKeyColumnName + "], columnName = [" + columnName + "], pKeyColumnValue = [" + pKeyColumnValue + "], columnJavaType = [" + columnJavaType + "]");
 
-        Query query = generateRelationQuery(tableName, pKeyColumnName, pKeyColumnValue);
+        String joinColumnTable = getOwnerJoinTableName(tableName);
+        String storableKey = DatastoreUtils.getStorableKey(joinColumnTable, pKeyColumnValue);
+        Query query = generateRelationQuery(tableName, pKeyColumnName, storableKey);
 
         List<E> results = new ArrayList<>();
         List<Entity> entities = getQueryResults(query);
         logger.debug(columnName + " for " + pKeyColumnName + "[" + pKeyColumnValue + "]:");
         for (Entity entity : entities) {
-            logger.debug("\t" + entity.getProperty(columnName));
-            results.add((E) entity.getProperty(columnName));
+            Key targetKey = DatastoreUtils.keyFromStorableKey(entity.getProperty(columnName).toString());
+            logger.debug("\t" + targetKey);
+            results.add((E) targetKey);
         }
         return results;
     }
@@ -476,14 +523,17 @@ public class DatastoreClient extends ClientBase implements Client<DatastoreQuery
     public Object[] findIdsByColumn(String schemaName, String tableName, String pKeyName, String columnName, Object columnValue, Class entityClazz) {
         logger.debug("schemaName = [" + schemaName + "], tableName = [" + tableName + "], pKeyName = [" + pKeyName + "], columnName = [" + columnName + "], columnValue = [" + columnValue + "], entityClazz = [" + entityClazz + "]");
 
-        Query query = generateRelationQuery(tableName, columnName, columnValue);
+        String inverseJoinColumnTable = getInverseJoinTableName(tableName);
+        String storableKey = DatastoreUtils.getStorableKey(inverseJoinColumnTable, columnValue);
+        Query query = generateRelationQuery(tableName, columnName, storableKey);
 
         List<Object> results = new ArrayList<>();
         List<Entity> entities = getQueryResults(query);
         logger.debug(pKeyName + " for " + columnName + "[" + columnValue + "]:");
         for (Entity entity : entities) {
-            logger.debug("\t" + entity.getProperty(pKeyName));
-            results.add(entity.getProperty(pKeyName));
+            Key targetKey = DatastoreUtils.keyFromStorableKey(entity.getProperty(pKeyName).toString());
+            logger.debug("\t" + targetKey);
+            results.add(targetKey);
         }
         return results.toArray();
     }

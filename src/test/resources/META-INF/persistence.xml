@@ -63,7 +63,7 @@
 			<!-- optional, if present remote API are used, must be like your_app_id.appspot.com -->
 			<property name="kundera.nodes" value="localhost"/>
 			<!-- optional, port used to connect to server when using remote API, if no specified default is used (443) -->
-			<property name="kundera.port" value="8888"/>
+			<property name="kundera.port" value="8080"/>
 			<!-- optional, credentials (of and Admin on the remote server), mandatory if using remote API -->
 			<property name="kundera.username" value="username"/>
 			<property name="kundera.password" value="password does not matter"/>

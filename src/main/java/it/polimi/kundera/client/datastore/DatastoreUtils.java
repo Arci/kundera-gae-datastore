@@ -101,7 +101,7 @@ public class DatastoreUtils {
      *
      * @param key the key to be converted
      *
-     * @return a string representation
+     * @return the storable string representation
      */
     public static String getStorableKey(Key key) {
         Object id = key.getName();
@@ -110,6 +110,18 @@ public class DatastoreUtils {
             id = key.getId();
         }
         return key.getKind() + SEPARATOR + id;
+    }
+
+    /**
+     * Returns the key representation as string in the form {@code keyKind_keyID}.
+     *
+     * @param kind the entity kind
+     * @param id   the entity id
+     *
+     * @return the storable string representation
+     */
+    public static String getStorableKey(String kind, Object id) {
+        return kind + SEPARATOR + id;
     }
 
     /**
