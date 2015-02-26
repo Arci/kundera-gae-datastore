@@ -1,7 +1,6 @@
 package it.polimi.kundera.client.datastore;
 
 import com.google.appengine.api.datastore.*;
-import com.google.appengine.tools.remoteapi.RemoteApiInstaller;
 import com.google.appengine.tools.remoteapi.RemoteApiOptions;
 import com.impetus.kundera.PersistenceProperties;
 import com.impetus.kundera.client.Client;
@@ -18,7 +17,6 @@ import it.polimi.kundera.client.datastore.schemamanager.DatastoreSchemaManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 
@@ -33,13 +31,13 @@ public class DatastoreClientFactory extends GenericClientFactory {
     private static Logger logger = LoggerFactory.getLogger(DatastoreClientFactory.class);
     private EntityReader reader;
     private SchemaManager schemaManager;
-    private RemoteApiInstaller installer;
+    private RemoteApiOptions options;
     private DatastoreService datastore;
 
     @Override
     public void initialize(Map<String, Object> puProperties) {
-        installer = null;
         datastore = null;
+        options = null;
         reader = new DatastoreEntityReader(kunderaMetadata);
         initializePropertyReader();
         setExternalProperties(puProperties);
@@ -84,7 +82,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
 
     @Override
     protected Client instantiateClient(String persistenceUnit) {
-        return new DatastoreClient(kunderaMetadata, externalProperties, persistenceUnit, clientMetadata, indexManager, reader, datastore);
+        return new DatastoreClient(kunderaMetadata, externalProperties, persistenceUnit, clientMetadata, indexManager, reader, datastore, options);
     }
 
     @Override
@@ -97,16 +95,8 @@ public class DatastoreClientFactory extends GenericClientFactory {
         if (indexManager != null) {
             indexManager.close();
         }
-        if (installer != null) {
-            logger.debug("Uninstall remote API connection");
-            try {
-                installer.uninstall();
-            } catch (IllegalArgumentException e) {
-                // already uninstalled
-                logger.warn(e.getMessage());
-            }
-        }
         datastore = null;
+        options = null;
         schemaManager = null;
         externalProperties = null;
     }
@@ -144,17 +134,7 @@ public class DatastoreClientFactory extends GenericClientFactory {
                 throw new ClientLoaderException("Invalid port " + port + ": ", e);
             }
         }
-        try {
-            RemoteApiOptions options = new RemoteApiOptions().server(nodes, connectionPort).credentials(username, password);
-            this.installer = new RemoteApiInstaller();
-            this.installer.install(options);
-            logger.info("Connected to Datastore at " + nodes + ":" + connectionPort);
-        } catch (IOException e) {
-            throw new ClientLoaderException("Unable to connect to Datastore at " + nodes + ":" + connectionPort + ": ", e);
-        } catch (IllegalStateException e) {
-            // Remote API already installed
-            logger.warn(e.getMessage());
-        }
+        this.options = new RemoteApiOptions().server(nodes, connectionPort).credentials(username, password);
     }
 
     private DatastoreServiceConfig buildConfiguration() {

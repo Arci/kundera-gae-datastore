@@ -1,6 +1,8 @@
 package it.polimi.kundera.client.datastore;
 
 import com.google.appengine.api.datastore.*;
+import com.google.appengine.tools.remoteapi.RemoteApiInstaller;
+import com.google.appengine.tools.remoteapi.RemoteApiOptions;
 import com.impetus.kundera.KunderaException;
 import com.impetus.kundera.client.Client;
 import com.impetus.kundera.client.ClientBase;
@@ -8,6 +10,7 @@ import com.impetus.kundera.client.EnhanceEntity;
 import com.impetus.kundera.db.RelationHolder;
 import com.impetus.kundera.generator.AutoGenerator;
 import com.impetus.kundera.index.IndexManager;
+import com.impetus.kundera.loader.ClientLoaderException;
 import com.impetus.kundera.metadata.KunderaMetadataManager;
 import com.impetus.kundera.metadata.model.ClientMetadata;
 import com.impetus.kundera.metadata.model.EntityMetadata;
@@ -44,23 +47,37 @@ import java.util.*;
 public class DatastoreClient extends ClientBase implements Client<DatastoreQuery>, AutoGenerator {
 
     private EntityReader reader;
+    private RemoteApiInstaller installer;
     private DatastoreService datastore;
     private static final Logger logger = LoggerFactory.getLogger(DatastoreClient.class);
 
     protected DatastoreClient(final KunderaMetadata kunderaMetadata, Map<String, Object> properties,
                               String persistenceUnit, final ClientMetadata clientMetadata, IndexManager indexManager,
-                              EntityReader reader, final DatastoreService datastore) {
+                              EntityReader reader, final DatastoreService datastore, RemoteApiOptions options) {
         super(kunderaMetadata, properties, persistenceUnit);
         this.reader = reader;
         this.datastore = datastore;
         this.indexManager = indexManager;
         this.clientMetadata = clientMetadata;
+        if (options != null) {
+            try {
+                this.installer = new RemoteApiInstaller();
+                this.installer.install(options);
+                logger.info("Connected to Datastore at " + options.getHostname() + ":" + options.getPort());
+            } catch (IOException e) {
+                throw new ClientLoaderException("Unable to connect to Datastore at " + options.getHostname() + ":" + options.getPort() + ": ", e);
+            }
+        }
     }
 
     @Override
     public void close() {
         this.indexManager.flush();
         this.reader = null;
+        if (this.installer != null) {
+            logger.debug("Uninstall remote API connection");
+            this.installer.uninstall();
+        }
         this.datastore = null;
         externalProperties = null;
     }
