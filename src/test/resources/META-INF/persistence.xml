@@ -68,7 +68,7 @@
 			<property name="kundera.username" value="username"/>
 			<property name="kundera.password" value="password does not matter"/>
 			<!-- optional, 'create' or 'create-drop' -->
-			<property name="kundera.ddl.auto.prepare" value="create"/>
+			<property name="kundera.ddl.auto.prepare" value="create-drop"/>
 			<property name="kundera.client.lookup.class"
 					  value="it.polimi.kundera.client.datastore.DatastoreClientFactory"/>
 		</properties>
