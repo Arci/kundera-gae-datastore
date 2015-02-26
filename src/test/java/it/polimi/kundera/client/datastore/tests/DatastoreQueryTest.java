@@ -110,6 +110,11 @@ public class DatastoreQueryTest extends TestBase {
         Assert.assertEquals(2, allEmployees.size());
         Assert.assertTrue(allEmployees.get(0).getSalary().equals(456L));
         Assert.assertTrue(allEmployees.get(1).getSalary().equals(123L));
+
+        print("cleanup");
+        em.remove(employee1);
+        em.remove(employee2);
+        em.remove(phone);
     }
 
     @Test
@@ -188,6 +193,10 @@ public class DatastoreQueryTest extends TestBase {
             }
         }
         Assert.assertEquals(0, toCheck);
+
+        print("cleanup");
+        em.remove(employee1);
+        em.remove(employee2);
     }
 
     @Test
@@ -262,6 +271,12 @@ public class DatastoreQueryTest extends TestBase {
         query.setParameter("name", "Fabio");
         thrown.expect(KunderaException.class);
         query.getResultList();
+
+        print("cleanup");
+        em.remove(employee1);
+        em.remove(employee2);
+        em.remove(employee3);
+        em.remove(employee4);
     }
 
     @Test
